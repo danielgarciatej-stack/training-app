@@ -315,7 +315,7 @@ export default function Dashboard() {
             <div style={{ height: '100%', background: '#c8ff3c', borderRadius: '3px', width: totalSessions ? `${(completedCount / totalSessions) * 100}%` : '0%' }} />
           </div>
         </div>
-        <div style={{ background: '#131417', border: '1px solid #232629', borderRadius: '16px', padding: '15px' }}>
+        <div onClick={() => nextSession && navigate('/plan')} style={{ background: '#131417', border: '1px solid #232629', borderRadius: '16px', padding: '15px', cursor: nextSession ? 'pointer' : 'default' }}>
           <div style={{ ...mono, fontSize: '9px', color: '#6b7075', letterSpacing: '0.1em', marginBottom: '10px' }}>PRÓXIMA</div>
           {nextSession ? (
             <>
