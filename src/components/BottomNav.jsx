@@ -20,13 +20,6 @@ const ICONS = {
       <circle cx="16" cy="15" r="1" fill={active ? '#c8ff3c' : '#5a5f64'} />
     </svg>
   ),
-  '/metas': ({ active }) => (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-      <path d="M8 21h8M12 17v4" stroke={active ? '#c8ff3c' : '#5a5f64'} strokeWidth="1.6" strokeLinecap="round" />
-      <path d="M5 3h14v9a7 7 0 0 1-14 0V3Z" stroke={active ? '#c8ff3c' : '#5a5f64'} strokeWidth="1.6" strokeLinejoin="round" />
-      <path d="M5 7H2v4a3 3 0 0 0 3 3M19 7h3v4a3 3 0 0 1-3 3" stroke={active ? '#c8ff3c' : '#5a5f64'} strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
-  ),
   '/yo': ({ active }) => (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
       <circle cx="12" cy="7" r="4" stroke={active ? '#c8ff3c' : '#5a5f64'} strokeWidth="1.6" />
@@ -38,7 +31,6 @@ const ICONS = {
 const tabs = [
   { to: '/', label: 'HOY' },
   { to: '/plan', label: 'PLAN' },
-  { to: '/metas', label: 'METAS' },
   { to: '/yo', label: 'YO' },
 ]
 

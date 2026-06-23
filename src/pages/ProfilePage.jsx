@@ -10,15 +10,6 @@ const STRAVA_URL = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CL
 
 const mono = { fontFamily: "'JetBrains Mono', monospace" }
 
-const MEDALS = [
-  { name: 'Primera sesión', icon: '✓', prog: 'Conseguido', earned: true },
-  { name: 'Semana perfecta', icon: '✓', prog: 'Conseguido', earned: true },
-  { name: '7 días seguidos', icon: '✓', prog: 'Conseguido', earned: true },
-  { name: '100 km / mes', icon: '', prog: '0%', earned: false },
-  { name: 'Madrugador', icon: '', prog: '0/5', earned: false },
-  { name: 'Mes perfecto', icon: '', prog: '0/4', earned: false },
-]
-
 const SPORTS = [
   { id: 'running', name: 'Running', desc: 'CARRERA A PIE' },
   { id: 'cycling', name: 'Ciclismo', desc: 'CARRETERA / MTB' },
@@ -237,23 +228,6 @@ export default function ProfilePage() {
             {LEVEL_LABELS[profile?.level] || 'Principiante'} · {sportsLabel}
           </div>
         </div>
-      </div>
-
-      {/* Logros */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '13px' }}>
-        <div style={{ ...mono, fontSize: '11px', letterSpacing: '0.14em', color: '#6b7075' }}>LOGROS</div>
-        <span style={{ ...mono, fontSize: '11px', color: '#c8ff3c' }}>3 / 6</span>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '11px', marginBottom: '22px' }}>
-        {MEDALS.map((m) => (
-          <div key={m.name} style={{ background: '#131417', border: '1px solid #232629', borderRadius: '16px', padding: '14px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '9px' }}>
-            <div style={{ width: '46px', height: '46px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: 700, color: m.earned ? '#0a0b0d' : '#3a3e42', background: m.earned ? 'radial-gradient(circle at 50% 35%, #c8ff3c, #98c41f)' : '#0f1012', border: m.earned ? 'none' : '1px solid #232629' }}>
-              {m.icon}
-            </div>
-            <div style={{ fontSize: '11px', textAlign: 'center', color: '#cdd0d2', lineHeight: 1.25 }}>{m.name}</div>
-            <div style={{ ...mono, fontSize: '9px', letterSpacing: '0.06em', color: m.earned ? '#c8ff3c' : '#6b7075' }}>{m.prog}</div>
-          </div>
-        ))}
       </div>
 
       {/* Strava */}

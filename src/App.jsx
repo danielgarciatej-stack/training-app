@@ -5,7 +5,6 @@ import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import WeeklyPlan from './pages/WeeklyPlan'
 import ActivityLog from './pages/ActivityLog'
-import Metas from './pages/Metas'
 import ProfilePage from './pages/ProfilePage'
 import StravaCallback from './pages/StravaCallback'
 import WeeklySummary from './pages/WeeklySummary'
@@ -31,7 +30,6 @@ function AppRoutes() {
         <Route index element={<Dashboard />} />
         <Route path="plan" element={<WeeklyPlan />} />
         <Route path="register" element={<ActivityLog />} />
-        <Route path="metas" element={<Metas />} />
         <Route path="yo" element={<ProfilePage />} />
         <Route path="weekly-summary" element={<WeeklySummary />} />
       </Route>
