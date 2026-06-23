@@ -27,6 +27,8 @@ export default function WeeklyPlan() {
   const [selected, setSelected] = useState(null)
   const [planEvent, setPlanEvent] = useState('')
   const [loading, setLoading] = useState(true)
+  const [swapSource, setSwapSource] = useState(null)
+  const [swapping, setSwapping] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -55,6 +57,31 @@ export default function WeeklyPlan() {
     }
     load()
   }, [])
+
+  const performSwap = async (targetSession) => {
+    if (!swapSource || targetSession.id === swapSource.id || swapping) return
+    setSwapping(true)
+    const srcDay = swapSource.day_of_week
+    const tgtDay = targetSession.day_of_week
+    setWeeks(prev => prev.map(w => {
+      if (w.week_start !== currentWeek.week_start) return w
+      return {
+        ...w,
+        sessions: w.sessions.map(s => {
+          if (s.id === swapSource.id) return { ...s, day_of_week: tgtDay }
+          if (s.id === targetSession.id) return { ...s, day_of_week: srcDay }
+          return s
+        }).sort((a, b) => a.day_of_week - b.day_of_week),
+      }
+    }))
+    setSwapSource(null)
+    setSelected(null)
+    await Promise.all([
+      supabase.from('plan_sessions').update({ day_of_week: tgtDay }).eq('id', swapSource.id),
+      supabase.from('plan_sessions').update({ day_of_week: srcDay }).eq('id', targetSession.id),
+    ])
+    setSwapping(false)
+  }
 
   const currentWeek = weeks[weekIndex]
   const totalWeeks = weeks.length
@@ -167,20 +194,45 @@ export default function WeeklyPlan() {
         {/* Week list label */}
         <div style={{ ...mono, fontSize: '11px', letterSpacing: '0.14em', color: '#6b7075', marginBottom: '12px' }}>ESTA SEMANA</div>
 
+        {/* Swap mode banner */}
+        {swapSource && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(200,255,60,0.08)', border: '1px solid rgba(200,255,60,0.28)', borderRadius: '12px', padding: '11px 14px', marginBottom: '10px' }}>
+            <span style={{ fontSize: '13px', color: '#c8ff3c' }}>Elige el día con el que intercambiar</span>
+            <button onClick={() => setSwapSource(null)} style={{ background: 'none', border: 'none', color: '#9a9ea2', fontSize: '18px', cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}>×</button>
+          </div>
+        )}
+
         {/* Session list */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '9px', marginBottom: '18px' }}>
           {currentWeek?.sessions.map(s => {
             const isDone = s.status === 'completed'
             const isToday = isCurrentWeek && s.day_of_week === todayDow
+            const isSwapSource = swapSource?.id === s.id
+            const isSwapTarget = swapSource && !isDone && swapSource.id !== s.id
             const isSelected = selected?.id === s.id
+
+            let borderColor = isSelected ? '#c8ff3c' : '#232629'
+            let bgColor = isSelected ? '#161a12' : '#131417'
+            if (isSwapSource) { borderColor = '#c8ff3c'; bgColor = '#161a12' }
+            if (isSwapTarget) { borderColor = 'rgba(200,255,60,0.4)'; bgColor = '#131417' }
+
             const dayBoxStyle = { width: '42px', height: '42px', borderRadius: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', ...mono, fontSize: '13px', fontWeight: 700, flexShrink: 0, background: isDone ? '#c8ff3c' : '#0f1012', color: isDone ? '#0a0b0d' : (isToday ? '#c8ff3c' : '#9a9ea2'), border: isToday ? '2px solid #c8ff3c' : '1px solid #232629' }
             const statusStyle = isDone
               ? { ...mono, fontSize: '11px', color: '#c8ff3c' }
               : isToday
               ? { ...mono, fontSize: '10px', color: '#0a0b0d', background: '#c8ff3c', borderRadius: '6px', padding: '4px 7px', fontWeight: 700 }
               : { ...mono, fontSize: '11px', color: '#5a5f64' }
+
+            const handleCardClick = () => {
+              if (swapSource) {
+                if (!isDone && swapSource.id !== s.id) performSwap(s)
+              } else {
+                setSelected(s)
+              }
+            }
+
             return (
-              <div key={s.id} onClick={() => setSelected(s)} style={{ display: 'flex', alignItems: 'center', gap: '14px', background: isSelected ? '#161a12' : '#131417', border: `1px solid ${isSelected ? '#c8ff3c' : '#232629'}`, borderRadius: '14px', padding: '13px 16px', cursor: 'pointer' }}>
+              <div key={s.id} onClick={handleCardClick} style={{ display: 'flex', alignItems: 'center', gap: '14px', background: bgColor, border: `1px solid ${borderColor}`, borderRadius: '14px', padding: '13px 16px', cursor: 'pointer', transition: 'border-color 0.15s' }}>
                 <div style={dayBoxStyle}>{WEEK_DAYS[s.day_of_week]}</div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: '15px', fontWeight: 500, color: '#f2f3f0' }}>{s.session_type}</div>
@@ -188,9 +240,16 @@ export default function WeeklyPlan() {
                     {s.target_distance ? `${s.target_distance} KM` : ''}{s.target_distance && s.target_duration ? ' · ' : ''}{s.target_duration ? `${s.target_duration} MIN` : ''}
                   </div>
                 </div>
-                <div style={statusStyle}>
-                  {isDone ? '✓' : isToday ? 'HOY' : WEEK_NAMES[s.day_of_week]}
-                </div>
+                {!isDone && !swapSource && (
+                  <button
+                    onClick={e => { e.stopPropagation(); setSwapSource(s); setSelected(null) }}
+                    style={{ background: 'none', border: '1px solid #2a2e33', borderRadius: '8px', color: '#6b7075', fontSize: '15px', padding: '5px 8px', cursor: 'pointer', lineHeight: 1, flexShrink: 0 }}
+                    title="Intercambiar día"
+                  >⇄</button>
+                )}
+                {isSwapSource && <span style={{ ...mono, fontSize: '10px', color: '#c8ff3c', flexShrink: 0 }}>ORIGEN</span>}
+                {!swapSource && isDone && <div style={statusStyle}>✓</div>}
+                {!swapSource && !isDone && <div style={statusStyle}>{isToday ? 'HOY' : WEEK_NAMES[s.day_of_week]}</div>}
               </div>
             )
           })}
