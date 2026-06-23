@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 const mono = { fontFamily: "'JetBrains Mono', monospace" }
@@ -61,6 +61,7 @@ export default function Onboarding() {
   const [fieldErrors, setFieldErrors] = useState({})
   const [editing, setEditing] = useState(false)
   const location = useLocation()
+  const navigate = useNavigate()
 
   useEffect(() => {
     // Returning from Strava OAuth during onboarding
@@ -212,6 +213,7 @@ export default function Onboarding() {
         plan_status: 'none',
       }).eq('id', user.id)
       if (profileError) throw profileError
+      navigate('/', { replace: true })
     } catch (err) {
       setError(err.message)
       setSaving(false)
