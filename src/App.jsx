@@ -24,7 +24,11 @@ function AppRoutes() {
 
   return (
     <Routes>
-      <Route path="/onboarding" element={session ? <Navigate to="/" replace /> : <Onboarding />} />
+      <Route path="/onboarding" element={
+        session && !new URLSearchParams(window.location.search).get('strava')
+          ? <Navigate to="/" replace />
+          : <Onboarding />
+      } />
       <Route path="/login" element={session ? <Navigate to="/" replace /> : <Login />} />
       <Route path="/strava/callback" element={<StravaCallback />} />
       <Route path="/" element={session ? <Layout /> : <Navigate to="/onboarding" replace />}>

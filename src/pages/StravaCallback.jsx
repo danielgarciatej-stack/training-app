@@ -7,16 +7,21 @@ const mono = { fontFamily: "'JetBrains Mono', monospace" }
 export default function StravaCallback() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const [status, setStatus] = useState('connecting') // connecting | success | error
+  const [status, setStatus] = useState('connecting')
   const [message, setMessage] = useState('')
 
   useEffect(() => {
     const code = searchParams.get('code')
     const error = searchParams.get('error')
+    const fromOnboarding = localStorage.getItem('strava_from_onboarding') === 'true'
 
     if (error || !code) {
       setStatus('error')
       setMessage(error === 'access_denied' ? 'Cancelaste la conexión con Strava.' : 'Error al conectar con Strava.')
+      if (fromOnboarding) {
+        localStorage.removeItem('strava_from_onboarding')
+        setTimeout(() => navigate('/onboarding'), 2000)
+      }
       return
     }
 
@@ -33,10 +38,20 @@ export default function StravaCallback() {
 
         setStatus('success')
         setMessage(`Conectado como ${data.athlete?.name || 'atleta'}`)
-        setTimeout(() => navigate('/yo'), 2000)
+
+        if (fromOnboarding) {
+          localStorage.removeItem('strava_from_onboarding')
+          setTimeout(() => navigate('/onboarding?strava=done'), 1500)
+        } else {
+          setTimeout(() => navigate('/yo'), 2000)
+        }
       } catch (err) {
         setStatus('error')
         setMessage(err.message || 'Error inesperado')
+        if (fromOnboarding) {
+          localStorage.removeItem('strava_from_onboarding')
+          setTimeout(() => navigate('/onboarding'), 2500)
+        }
       }
     }
 
@@ -56,7 +71,7 @@ export default function StravaCallback() {
           <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#c8ff3c', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 700, color: '#0a0b0d' }}>✓</div>
           <div style={{ fontSize: '18px', fontWeight: 600, color: '#f2f3f0' }}>Strava conectado</div>
           <div style={{ fontSize: '14px', color: '#8a8e92' }}>{message}</div>
-          <div style={{ ...mono, fontSize: '11px', color: '#6b7075' }}>Volviendo al perfil…</div>
+          <div style={{ ...mono, fontSize: '11px', color: '#6b7075' }}>Volviendo…</div>
         </>
       )}
       {status === 'error' && (
@@ -65,7 +80,7 @@ export default function StravaCallback() {
           <div style={{ fontSize: '18px', fontWeight: 600, color: '#f2f3f0' }}>Error de conexión</div>
           <div style={{ fontSize: '14px', color: '#8a8e92', textAlign: 'center' }}>{message}</div>
           <button onClick={() => navigate('/yo')} style={{ marginTop: '8px', background: 'transparent', border: '1px solid #2a2e33', borderRadius: '12px', padding: '12px 24px', color: '#9a9ea2', fontFamily: "'Space Grotesk', sans-serif", fontSize: '14px', cursor: 'pointer' }}>
-            Volver al perfil
+            Volver
           </button>
         </>
       )}

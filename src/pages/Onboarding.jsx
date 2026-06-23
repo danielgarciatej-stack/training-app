@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 const mono = { fontFamily: "'JetBrains Mono', monospace" }
@@ -7,6 +7,10 @@ const inputStyle = { width: '100%', background: '#131417', border: '1px solid #2
 const labelStyle = { ...mono, fontSize: '11px', letterSpacing: '0.14em', color: '#6b7075', marginBottom: '8px', display: 'block' }
 const btnPrimary = { width: '100%', background: '#c8ff3c', border: 'none', borderRadius: '14px', padding: '18px', fontFamily: "'Space Grotesk', sans-serif", fontSize: '16px', fontWeight: 600, color: '#0a0b0d', cursor: 'pointer' }
 const backStyle = { display: 'inline-flex', alignItems: 'center', gap: '5px', cursor: 'pointer', color: '#9a9ea2', fontSize: '14px', marginBottom: '18px', background: 'none', border: 'none', padding: 0, fontFamily: "'Space Grotesk', sans-serif" }
+
+const STRAVA_CLIENT_ID = '260486'
+const STRAVA_REDIRECT = `${window.location.origin}/strava/callback`
+const STRAVA_URL = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(STRAVA_REDIRECT)}&approval_prompt=force&scope=read,activity:read_all`
 
 const SPORTS = [
   { id: 'running', name: 'Running', desc: 'CARRERA A PIE' },
@@ -27,16 +31,17 @@ const GOALS = [
   { id: 'fitness', name: 'Salud y forma general' },
   { id: 'peso', name: 'Bajar peso / composición' },
 ]
+const DAY_LABELS = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
 
 const FLOW = ['welcome', 'sport', 'level', 'avail', 'goals', 'goaldate', 'data', 'summary']
 
 const initialForm = {
   name: '', email: '', password: '', pwVisible: false,
   sports: ['running'], level: 'inter',
-  days: 4, time: 60,
+  training_days: [1, 3, 5], time: 60,
   goals: ['carrera'],
   eventName: '', eventDate: '',
-  connected: false,
+  stravaConnected: false, stravaStats: null,
   weight: '', age: '', hrMax: '', weekKm: '',
   t5k: '', t10k: '', t21k: '',
 }
@@ -55,8 +60,46 @@ export default function Onboarding() {
   const [error, setError] = useState('')
   const [fieldErrors, setFieldErrors] = useState({})
   const [editing, setEditing] = useState(false)
+  const location = useLocation()
+
+  useEffect(() => {
+    // Returning from Strava OAuth during onboarding
+    const params = new URLSearchParams(location.search)
+    const stravaDone = params.get('strava') === 'done'
+    const savedForm = localStorage.getItem('onboarding_form')
+    if (stravaDone && savedForm) {
+      const restored = JSON.parse(savedForm)
+      localStorage.removeItem('onboarding_form')
+      // Load strava data from the already-created profile
+      loadStravaProfile(restored)
+    }
+  }, [])
+
+  const loadStravaProfile = async (restoredForm) => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+    if (profile) {
+      const updatedForm = {
+        ...restoredForm,
+        stravaConnected: true,
+        stravaStats: profile.strava_stats,
+        weight: profile.weight?.toString() || restoredForm.weight,
+        weekKm: profile.running_weekly_km?.toString() || restoredForm.weekKm,
+      }
+      setForm(updatedForm)
+    }
+    setScreen('data')
+  }
 
   const set = (k, v) => { setForm(f => ({ ...f, [k]: v })); setFieldErrors(e => ({ ...e, [k]: '' })) }
+
+  const toggleDay = (d) => {
+    const days = form.training_days.includes(d)
+      ? form.training_days.filter(x => x !== d)
+      : [...form.training_days, d].sort()
+    set('training_days', days)
+  }
 
   const validate = () => {
     if (screen === 'welcome') {
@@ -68,16 +111,13 @@ export default function Onboarding() {
       return Object.keys(errs).length === 0
     }
     if (screen === 'sport') {
-      if (form.sports.length === 0) {
-        setFieldErrors({ sports: 'Elige al menos un deporte' })
-        return false
-      }
+      if (form.sports.length === 0) { setFieldErrors({ sports: 'Elige al menos un deporte' }); return false }
+    }
+    if (screen === 'avail') {
+      if (form.training_days.length === 0) { setFieldErrors({ days: 'Elige al menos un día' }); return false }
     }
     if (screen === 'goals') {
-      if (form.goals.length === 0) {
-        setFieldErrors({ goals: 'Elige al menos un objetivo' })
-        return false
-      }
+      if (form.goals.length === 0) { setFieldErrors({ goals: 'Elige al menos un objetivo' }); return false }
     }
     return true
   }
@@ -95,10 +135,11 @@ export default function Onboarding() {
   }
   const editStep = (s) => { setScreen(s); setEditing(true) }
 
-  const finish = async () => {
+  const connectStrava = async () => {
     setSaving(true)
     setError('')
     try {
+      // Create account first so strava-callback can save to profiles
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: form.email,
         password: form.password,
@@ -106,22 +147,79 @@ export default function Onboarding() {
       })
       if (signUpError) throw signUpError
       if (data.user) {
-        const trainingDays = Array.from({ length: form.days }, (_, i) => i)
-        const { error: profileError } = await supabase.from('profiles').insert({
+        await supabase.from('profiles').insert({
           id: data.user.id,
           name: form.name,
           sports: form.sports,
-          running_goal: form.goals.join(', '),
-          training_days: trainingDays,
+          level: form.level,
+          training_days: form.training_days,
           session_duration: form.time,
+          running_goal: form.goals.join(', '),
+          goal_event: form.eventName || null,
+          goal_date: form.eventDate || null,
+          plan_status: 'none',
+        })
+      }
+      // Save form state to restore after OAuth
+      localStorage.setItem('onboarding_form', JSON.stringify(form))
+      localStorage.setItem('strava_from_onboarding', 'true')
+      window.location.href = STRAVA_URL
+    } catch (err) {
+      setError(err.message)
+      setSaving(false)
+    }
+  }
+
+  const finish = async () => {
+    setSaving(true)
+    setError('')
+    try {
+      // Check if account was already created (via Strava flow)
+      const { data: { user: existingUser } } = await supabase.auth.getUser()
+
+      if (existingUser) {
+        // Account already created via Strava — just update profile with final data
+        const { error: profileError } = await supabase.from('profiles').update({
+          sports: form.sports,
+          level: form.level,
+          training_days: form.training_days,
+          session_duration: form.time,
+          running_goal: form.goals.join(', '),
+          goal_event: form.eventName || null,
+          goal_date: form.eventDate || null,
           age: form.age ? parseInt(form.age) : null,
           weight: form.weight ? parseFloat(form.weight) : null,
           running_weekly_km: form.weekKm ? parseFloat(form.weekKm) : null,
-          strava_connected: form.connected,
-          goal_date: form.eventDate || null,
-          goal_event: form.eventName || null,
-        })
+          plan_status: 'none',
+        }).eq('id', existingUser.id)
         if (profileError) throw profileError
+      } else {
+        // Create account now (manual flow, no Strava)
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email: form.email,
+          password: form.password,
+          options: { data: { name: form.name } },
+        })
+        if (signUpError) throw signUpError
+        if (data.user) {
+          const { error: profileError } = await supabase.from('profiles').insert({
+            id: data.user.id,
+            name: form.name,
+            sports: form.sports,
+            level: form.level,
+            training_days: form.training_days,
+            session_duration: form.time,
+            running_goal: form.goals.join(', '),
+            age: form.age ? parseInt(form.age) : null,
+            weight: form.weight ? parseFloat(form.weight) : null,
+            running_weekly_km: form.weekKm ? parseFloat(form.weekKm) : null,
+            strava_connected: false,
+            goal_date: form.eventDate || null,
+            goal_event: form.eventName || null,
+            plan_status: 'none',
+          })
+          if (profileError) throw profileError
+        }
       }
     } catch (err) {
       setError(err.message)
@@ -235,14 +333,25 @@ export default function Onboarding() {
     <div style={{ minHeight: '100svh', background: '#0a0b0d', padding: '56px 28px 28px', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
       <button style={backStyle} onClick={back}><span style={{ fontSize: '19px', lineHeight: '0.5' }}>‹</span> Atrás</button>
       <div style={{ ...mono, fontSize: '11px', letterSpacing: '0.14em', color: '#c8ff3c', marginBottom: '8px' }}>03 / 06</div>
-      <div style={{ fontSize: '28px', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: '6px', color: '#f2f3f0' }}>¿Cuánto puedes entrenar?</div>
-      <div style={{ fontSize: '14px', color: '#8a8e92', marginBottom: '30px' }}>Adaptamos el volumen a tu vida real.</div>
-      <div style={{ ...mono, fontSize: '11px', letterSpacing: '0.14em', color: '#6b7075', marginBottom: '12px' }}>DÍAS POR SEMANA</div>
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '30px' }}>
-        {[2, 3, 4, 5, 6, 7].map(n => (
-          <div key={n} onClick={() => set('days', n)} style={chip(form.days === n)}>{n}</div>
-        ))}
+      <div style={{ fontSize: '28px', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: '6px', color: '#f2f3f0' }}>¿Cuándo puedes entrenar?</div>
+      <div style={{ fontSize: '14px', color: '#8a8e92', marginBottom: '30px' }}>Selecciona los días disponibles.</div>
+
+      <div style={{ ...mono, fontSize: '11px', letterSpacing: '0.14em', color: '#6b7075', marginBottom: '12px' }}>DÍAS DE ENTRENAMIENTO</div>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+        {DAY_LABELS.map((label, i) => {
+          const on = form.training_days.includes(i)
+          return (
+            <div key={i} onClick={() => toggleDay(i)} style={{ flex: 1, textAlign: 'center', padding: '14px 0', borderRadius: '12px', ...mono, fontSize: '15px', fontWeight: 600, cursor: 'pointer', border: `1px solid ${on ? '#c8ff3c' : '#232629'}`, background: on ? '#c8ff3c' : '#131417', color: on ? '#0a0b0d' : '#cdd0d2' }}>
+              {label}
+            </div>
+          )
+        })}
       </div>
+      <div style={{ ...mono, fontSize: '10px', color: '#6b7075', marginBottom: '28px' }}>
+        {form.training_days.length} día{form.training_days.length !== 1 ? 's' : ''} seleccionado{form.training_days.length !== 1 ? 's' : ''}
+      </div>
+      {fieldErrors.days && <p style={{ color: '#ff6b6b', fontSize: '13px', marginBottom: '10px' }}>{fieldErrors.days}</p>}
+
       <div style={{ ...mono, fontSize: '11px', letterSpacing: '0.14em', color: '#6b7075', marginBottom: '12px' }}>MINUTOS POR SESIÓN</div>
       <div style={{ display: 'flex', gap: '8px', marginBottom: '30px' }}>
         {[{ v: 30, l: "30'" }, { v: 45, l: "45'" }, { v: 60, l: "60'" }, { v: 90, l: "90'" }].map(o => (
@@ -307,18 +416,49 @@ export default function Onboarding() {
       <button style={backStyle} onClick={back}><span style={{ fontSize: '19px', lineHeight: '0.5' }}>‹</span> Atrás</button>
       <div style={{ ...mono, fontSize: '11px', letterSpacing: '0.14em', color: '#c8ff3c', marginBottom: '8px' }}>06 / 06</div>
       <div style={{ fontSize: '28px', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: '6px', color: '#f2f3f0' }}>Tus datos</div>
-      <div style={{ fontSize: '14px', color: '#8a8e92', marginBottom: '22px', lineHeight: 1.5 }}>Conecta Strava para autorrellenar, o introdúcelos a mano.</div>
-      <button onClick={() => set('connected', !form.connected)} style={form.connected
-        ? { ...btnPrimary, background: '#161a12', border: '1px solid rgba(200,255,60,0.3)', color: '#c8ff3c', marginBottom: '0' }
-        : { width: '100%', background: '#131417', border: '1px solid #2a2e33', borderRadius: '14px', padding: '15px', fontFamily: "'Space Grotesk', sans-serif", fontSize: '15px', fontWeight: 600, color: '#f2f3f0', cursor: 'pointer' }
-      }>
-        {form.connected ? '✓ Strava conectado · datos importados' : 'Conectar con Strava'}
-      </button>
+      <div style={{ fontSize: '14px', color: '#8a8e92', marginBottom: '22px', lineHeight: 1.5 }}>Conecta Strava para importar tu historial y personalizar el plan al máximo.</div>
+
+      {/* Strava button */}
+      {form.stravaConnected ? (
+        <div style={{ background: '#161a12', border: '1px solid rgba(200,255,60,0.3)', borderRadius: '14px', padding: '16px', marginBottom: '0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+            <span style={{ color: '#c8ff3c', fontSize: '16px' }}>✓</span>
+            <span style={{ fontSize: '15px', fontWeight: 600, color: '#c8ff3c' }}>Strava conectado</span>
+          </div>
+          {form.stravaStats && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              {[
+                { label: 'KM/SEMANA', value: form.stravaStats.running_weekly_km ? `${form.stravaStats.running_weekly_km} km` : '—' },
+                { label: 'RITMO MEDIO', value: form.stravaStats.avg_easy_pace ? `${form.stravaStats.avg_easy_pace}/km` : '—' },
+                { label: 'CARRERA MÁS LARGA', value: form.stravaStats.longest_run_km ? `${form.stravaStats.longest_run_km} km` : '—' },
+                { label: 'FC MEDIA', value: form.stravaStats.avg_heart_rate ? `${form.stravaStats.avg_heart_rate} bpm` : '—' },
+                { label: 'ACTIVIDADES (8 SEM)', value: form.stravaStats.total_runs_8w ? `${form.stravaStats.total_runs_8w} runs` : '—' },
+                { label: 'KM AÑO', value: form.stravaStats.ytd_run_km ? `${form.stravaStats.ytd_run_km} km` : '—' },
+              ].map(({ label, value }) => (
+                <div key={label} style={{ background: '#0f1012', borderRadius: '10px', padding: '10px 12px' }}>
+                  <div style={{ ...mono, fontSize: '9px', color: '#6b7075', letterSpacing: '0.1em', marginBottom: '3px' }}>{label}</div>
+                  <div style={{ ...mono, fontSize: '14px', color: '#f2f3f0', fontWeight: 600 }}>{value}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <button onClick={connectStrava} disabled={saving} style={{ width: '100%', background: '#fc4c02', border: 'none', borderRadius: '14px', padding: '16px', fontFamily: "'Space Grotesk', sans-serif", fontSize: '15px', fontWeight: 600, color: '#fff', cursor: saving ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', opacity: saving ? 0.7 : 1 }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+            <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
+          </svg>
+          {saving ? 'Creando cuenta…' : 'Conectar con Strava'}
+        </button>
+      )}
+      {error && <p style={{ color: '#ff6b6b', fontSize: '13px', margin: '10px 0 0' }}>{error}</p>}
+
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '20px 0' }}>
         <div style={{ flex: 1, height: '1px', background: '#232629' }} />
         <div style={{ ...mono, fontSize: '10px', color: '#5a5f64', letterSpacing: '0.1em' }}>O A MANO</div>
         <div style={{ flex: 1, height: '1px', background: '#232629' }} />
       </div>
+
       <div style={{ display: 'flex', gap: '12px', marginBottom: '14px' }}>
         <div style={{ flex: 1 }}><div style={{ ...mono, fontSize: '10px', color: '#6b7075', letterSpacing: '0.1em', marginBottom: '7px' }}>PESO (KG)</div><input value={form.weight} onChange={e => set('weight', e.target.value)} placeholder="76" style={inputStyle} /></div>
         <div style={{ flex: 1 }}><div style={{ ...mono, fontSize: '10px', color: '#6b7075', letterSpacing: '0.1em', marginBottom: '7px' }}>EDAD</div><input value={form.age} onChange={e => set('age', e.target.value)} placeholder="31" style={inputStyle} /></div>
@@ -342,13 +482,14 @@ export default function Onboarding() {
     const sportNames = { running: 'Running', cycling: 'Ciclismo', triatlon: 'Triatlón', trail: 'Trail', natacion: 'Natación', futbol: 'Fútbol' }
     const levelNames = { principiante: 'Principiante', inter: 'Intermedio', avanzado: 'Avanzado' }
     const goalNames = { carrera: 'Competición', marca: 'Marca / ritmo', fitness: 'Salud', peso: 'Peso' }
+    const daysLabel = form.training_days.map(d => DAY_LABELS[d]).join(' · ')
     const rows = [
       { label: 'DEPORTE', value: form.sports.map(s => sportNames[s] || s).join(', '), step: 'sport' },
       { label: 'NIVEL', value: levelNames[form.level], step: 'level' },
-      { label: 'DISPONIBILIDAD', value: `${form.days} días · ${form.time} min/sesión`, step: 'avail' },
+      { label: 'DÍAS', value: `${daysLabel} · ${form.time} min/sesión`, step: 'avail' },
       { label: 'OBJETIVOS', value: form.goals.map(g => goalNames[g] || g).join(', ') || 'Ninguno', step: 'goals' },
       { label: 'FECHA OBJETIVO', value: form.eventName ? `${form.eventName} · ${fmtDate(form.eventDate)}` : fmtDate(form.eventDate), step: 'goaldate' },
-      { label: 'DATOS', value: form.connected ? 'Importados de Strava ✓' : (form.weight ? `${form.weight} kg · ${form.weekKm || '—'} km/sem` : 'Sin completar'), step: 'data' },
+      { label: 'DATOS', value: form.stravaConnected ? '✓ Importados de Strava' : (form.weight ? `${form.weight} kg · ${form.weekKm || '—'} km/sem` : 'Sin completar'), step: 'data' },
     ]
     return (
       <div style={{ minHeight: '100svh', background: '#0a0b0d', padding: '56px 28px 28px', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>

@@ -46,25 +46,38 @@ Deno.serve(async (req) => {
     const todayDow = jsDay === 0 ? 6 : jsDay - 1
     const todayStr = toISO(now)
 
+    // Build Strava data section if available
+    const stravaStats = profile.strava_stats
+    const stravaSection = stravaStats ? `
+DATOS REALES DE STRAVA (últimas 8 semanas, muy importantes para calibrar el plan):
+- Km/semana reales (running): ${stravaStats.running_weekly_km ?? 'n/d'} km
+- Ritmo fácil real: ${profile.running_avg_pace || stravaStats.avg_easy_pace || 'n/d'} min/km
+- Carrera más larga: ${profile.running_longest_run || stravaStats.longest_run_km || 'n/d'} km
+- FC media: ${profile.running_avg_hr || stravaStats.avg_heart_rate || 'n/d'} bpm
+- Total carreras (8 sem): ${stravaStats.total_runs_8w ?? 'n/d'}
+- Km año (running): ${stravaStats.ytd_run_km ?? 'n/d'} km
+${stravaStats.cycling_weekly_km ? `- Km/semana reales (ciclismo): ${stravaStats.cycling_weekly_km} km` : ''}
+Usa estos datos para fijar ritmos, volumen y progresión realistas.` : ''
+
     const prompt = `Eres un entrenador personal experto en running y ciclismo. Genera un plan de entrenamiento personalizado de 4 semanas. Responde ÚNICAMENTE con JSON válido, sin texto adicional, sin markdown.
 
 PERFIL DEL ATLETA:
 - Nombre: ${profile.name || 'Atleta'}
+- Nivel: ${profile.level || 'intermedio'}
 - Edad: ${profile.age || 'no especificada'}
 - Peso: ${profile.weight || 'no especificado'} kg
 - Deportes: ${sports.join(', ')}
 ${hasRunning ? `
 RUNNING:
 - Objetivo: ${profile.runningGoal || profile.running_goal || 'mejorar forma física'}
-- Ritmo habitual: ${profile.runningPace || profile.running_pace || 'no especificado'} min/km
 - Km semanales actuales: ${profile.runningWeeklyKm || profile.running_weekly_km || 0} km
 ` : ''}
 ${hasCycling ? `
 CICLISMO:
 - Objetivo: ${profile.cyclingGoal || profile.cycling_goal || 'mejorar forma física'}
-- Velocidad media: ${profile.cyclingSpeed || profile.cycling_speed || 0} km/h
 - Km semanales actuales: ${profile.cyclingWeeklyKm || profile.cycling_weekly_km || 0} km
 ` : ''}
+${stravaSection}
 DISPONIBILIDAD:
 - Días disponibles (0=lun, 1=mar, 2=mié, 3=jue, 4=vie, 5=sáb, 6=dom): [${trainingDays.join(', ')}]
 - Duración máxima por sesión: ${sessionDuration} minutos
