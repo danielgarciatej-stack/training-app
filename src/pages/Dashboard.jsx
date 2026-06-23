@@ -33,7 +33,7 @@ export default function Dashboard() {
   const [weekSessions, setWeekSessions] = useState([])
   const [generatingPlan, setGeneratingPlan] = useState(!!location.state?.generating)
   const [planError, setPlanError] = useState('')
-  const [showTutorial, setShowTutorial] = useState(() => !localStorage.getItem('tutorial_done'))
+  const [showTutorial, setShowTutorial] = useState(false)
 
   const today = new Date()
   const todayDow = today.getDay() === 0 ? 6 : today.getDay() - 1
@@ -102,6 +102,7 @@ export default function Dashboard() {
       setWeekSessions(sessions || [])
       const upcoming = sessions?.find(s => s.day_of_week > todayDow && s.status === 'pending')
       setNextSession(upcoming || null)
+      if (!localStorage.getItem('tutorial_done')) setShowTutorial(true)
     }
     load()
     return () => { cancelled = true }
@@ -146,6 +147,7 @@ export default function Dashboard() {
       setPlanError(err.message)
     } finally {
       setGeneratingPlan(false)
+      if (!localStorage.getItem('tutorial_done')) setShowTutorial(true)
     }
   }
 
