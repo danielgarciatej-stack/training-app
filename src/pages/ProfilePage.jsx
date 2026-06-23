@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import Tutorial from '../components/Tutorial'
 
 const LEVEL_LABELS = { principiante: 'Principiante', inter: 'Intermedio', avanzado: 'Avanzado' }
 
@@ -41,6 +42,7 @@ export default function ProfilePage() {
   const [syncing, setSyncing] = useState(false)
   const [syncMsg, setSyncMsg] = useState('')
   const [screen, setScreen] = useState('profile') // 'profile' | 'edit' | 'saving'
+  const [showTutorial, setShowTutorial] = useState(false)
   const [edit, setEdit] = useState(null) // editable copy of profile fields
   const [saving, setSaving] = useState(false)
 
@@ -215,6 +217,7 @@ export default function ProfilePage() {
   // ---- MAIN PROFILE ----
   return (
     <div style={{ padding: '18px 24px 24px', background: '#0a0b0d', minHeight: '100%' }}>
+      {showTutorial && <Tutorial onClose={() => setShowTutorial(false)} />}
       <div style={{ fontSize: '24px', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: '22px', color: '#f2f3f0' }}>Perfil</div>
 
       {/* Avatar + info */}
@@ -266,6 +269,10 @@ export default function ProfilePage() {
           Recalcular plan con IA <span style={{ color: '#c8ff3c' }}>›</span>
         </div>
       </div>
+
+      <button onClick={() => setShowTutorial(true)} style={{ width: '100%', background: 'transparent', border: '1px solid #232629', borderRadius: '14px', padding: '15px', fontSize: '14px', color: '#9a9ea2', cursor: 'pointer', marginBottom: '10px' }}>
+        Ver tutorial
+      </button>
 
       <button onClick={() => supabase.auth.signOut()} style={{ width: '100%', background: 'transparent', border: '1px solid #232629', borderRadius: '14px', padding: '15px', fontSize: '14px', color: '#6b7075', cursor: 'pointer' }}>
         Cerrar sesión

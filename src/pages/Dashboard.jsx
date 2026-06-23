@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import Tutorial from '../components/Tutorial'
 
 const mono = { fontFamily: "'JetBrains Mono', monospace" }
 
@@ -32,6 +33,7 @@ export default function Dashboard() {
   const [weekSessions, setWeekSessions] = useState([])
   const [generatingPlan, setGeneratingPlan] = useState(!!location.state?.generating)
   const [planError, setPlanError] = useState('')
+  const [showTutorial, setShowTutorial] = useState(() => !localStorage.getItem('tutorial_done'))
 
   const today = new Date()
   const todayDow = today.getDay() === 0 ? 6 : today.getDay() - 1
@@ -158,6 +160,7 @@ export default function Dashboard() {
 
   return (
     <div style={{ padding: '14px 24px 24px', minHeight: '100%', background: '#0a0b0d' }}>
+      {showTutorial && <Tutorial onClose={() => setShowTutorial(false)} />}
       {/* Header */}
       <div style={{ marginBottom: '20px', paddingTop: '14px' }}>
         <div style={{ fontSize: '22px', fontWeight: 600, letterSpacing: '-0.01em', color: '#f2f3f0' }}>
