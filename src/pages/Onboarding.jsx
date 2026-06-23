@@ -82,12 +82,24 @@ export default function Onboarding() {
     const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
     if (profile) {
       const updatedForm = {
-        ...restoredForm,
+        // Restore only structural fields (not manual data fields)
+        ...initialForm,
+        name: restoredForm.name,
+        email: restoredForm.email,
+        password: restoredForm.password,
+        sports: restoredForm.sports,
+        level: restoredForm.level,
+        training_days: restoredForm.training_days,
+        time: restoredForm.time,
+        goals: restoredForm.goals,
+        eventName: restoredForm.eventName,
+        eventDate: restoredForm.eventDate,
+        // Data fields: only from Strava profile, never from old localStorage
         stravaConnected: true,
         stravaStats: profile.strava_stats,
-        weight: profile.weight?.toString() || restoredForm.weight,
-        age: profile.age?.toString() || restoredForm.age,
-        weekKm: profile.running_weekly_km?.toString() || restoredForm.weekKm,
+        weight: profile.weight?.toString() || '',
+        age: profile.age?.toString() || '',
+        weekKm: profile.running_weekly_km?.toString() || '',
       }
       setForm(updatedForm)
     }
@@ -421,23 +433,41 @@ export default function Onboarding() {
             <span style={{ color: '#c8ff3c', fontSize: '16px' }}>✓</span>
             <span style={{ fontSize: '15px', fontWeight: 600, color: '#c8ff3c' }}>Strava conectado</span>
           </div>
-          {form.stravaStats && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              {[
-                { label: 'KM/SEMANA', value: form.stravaStats.running_weekly_km ? `${form.stravaStats.running_weekly_km} km` : '—' },
-                { label: 'RITMO MEDIO', value: form.stravaStats.avg_easy_pace ? `${form.stravaStats.avg_easy_pace}/km` : '—' },
-                { label: 'CARRERA MÁS LARGA', value: form.stravaStats.longest_run_km ? `${form.stravaStats.longest_run_km} km` : '—' },
-                { label: 'FC MEDIA', value: form.stravaStats.avg_heart_rate ? `${form.stravaStats.avg_heart_rate} bpm` : '—' },
-                { label: 'ACTIVIDADES (8 SEM)', value: form.stravaStats.total_runs_8w ? `${form.stravaStats.total_runs_8w} runs` : '—' },
-                { label: 'KM AÑO', value: form.stravaStats.ytd_run_km ? `${form.stravaStats.ytd_run_km} km` : '—' },
-              ].map(({ label, value }) => (
-                <div key={label} style={{ background: '#0f1012', borderRadius: '10px', padding: '10px 12px' }}>
-                  <div style={{ ...mono, fontSize: '9px', color: '#6b7075', letterSpacing: '0.1em', marginBottom: '3px' }}>{label}</div>
-                  <div style={{ ...mono, fontSize: '14px', color: '#f2f3f0', fontWeight: 600 }}>{value}</div>
-                </div>
-              ))}
-            </div>
-          )}
+          {form.stravaStats && (() => {
+            const s = form.stravaStats
+            const hasRunData = s.running_weekly_km || s.avg_easy_pace || s.longest_run_km || s.ytd_run_km
+            const hasCycleData = s.cycling_weekly_km || s.ytd_ride_km
+            const hasAnyData = hasRunData || hasCycleData || s.avg_heart_rate || s.total_runs_8w
+
+            if (!hasAnyData) return (
+              <div style={{ background: '#0f1012', borderRadius: '10px', padding: '12px 14px' }}>
+                <div style={{ fontSize: '13px', color: '#6b7075' }}>Sin actividades recientes en Strava. Puedes rellenar los datos a mano abajo.</div>
+              </div>
+            )
+
+            const items = [
+              hasRunData && { label: 'KM/SEM RUNNING', value: s.running_weekly_km ? `${s.running_weekly_km} km` : '—' },
+              hasCycleData && { label: 'KM/SEM CICLISMO', value: s.cycling_weekly_km ? `${s.cycling_weekly_km} km` : '—' },
+              s.avg_easy_pace && { label: 'RITMO MEDIO', value: `${s.avg_easy_pace}/km` },
+              s.longest_run_km && { label: 'CARRERA MÁS LARGA', value: `${s.longest_run_km} km` },
+              s.avg_heart_rate && { label: 'FC MEDIA', value: `${s.avg_heart_rate} bpm` },
+              (s.total_runs_8w > 0) && { label: 'CARRERAS (8 SEM)', value: `${s.total_runs_8w}` },
+              (s.total_rides_8w > 0) && { label: 'RUTAS (8 SEM)', value: `${s.total_rides_8w}` },
+              s.ytd_run_km && { label: 'KM AÑO RUNNING', value: `${s.ytd_run_km} km` },
+              s.ytd_ride_km && { label: 'KM AÑO CICLISMO', value: `${s.ytd_ride_km} km` },
+            ].filter(Boolean)
+
+            return (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                {items.map(({ label, value }) => (
+                  <div key={label} style={{ background: '#0f1012', borderRadius: '10px', padding: '10px 12px' }}>
+                    <div style={{ ...mono, fontSize: '9px', color: '#6b7075', letterSpacing: '0.1em', marginBottom: '3px' }}>{label}</div>
+                    <div style={{ ...mono, fontSize: '14px', color: '#f2f3f0', fontWeight: 600 }}>{value}</div>
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
         </div>
       ) : (
         <button onClick={connectStrava} disabled={saving} style={{ width: '100%', background: '#fc4c02', border: 'none', borderRadius: '14px', padding: '16px', fontFamily: "'Space Grotesk', sans-serif", fontSize: '15px', fontWeight: 600, color: '#fff', cursor: saving ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', opacity: saving ? 0.7 : 1 }}>
