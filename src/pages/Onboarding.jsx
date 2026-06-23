@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 const mono = { fontFamily: "'JetBrains Mono', monospace" }
-const inputStyle = { width: '100%', background: '#131417', border: '1px solid #232629', borderRadius: '14px', padding: '15px 16px', fontFamily: "'Space Grotesk', sans-serif", fontSize: '16px', color: '#f2f3f0', outline: 'none' }
+const inputStyle = { width: '100%', background: '#131417', border: '1px solid #232629', borderRadius: '14px', padding: '15px 16px', fontFamily: "'Space Grotesk', sans-serif", fontSize: '16px', color: '#f2f3f0', outline: 'none', '--placeholder-color': '#3a3e42' }
 const labelStyle = { ...mono, fontSize: '11px', letterSpacing: '0.14em', color: '#6b7075', marginBottom: '8px', display: 'block' }
 const btnPrimary = { width: '100%', background: '#c8ff3c', border: 'none', borderRadius: '14px', padding: '18px', fontFamily: "'Space Grotesk', sans-serif", fontSize: '16px', fontWeight: 600, color: '#0a0b0d', cursor: 'pointer' }
 const backStyle = { display: 'inline-flex', alignItems: 'center', gap: '5px', cursor: 'pointer', color: '#9a9ea2', fontSize: '14px', marginBottom: '18px', background: 'none', border: 'none', padding: 0, fontFamily: "'Space Grotesk', sans-serif" }
@@ -456,18 +456,18 @@ export default function Onboarding() {
       </div>
 
       <div style={{ display: 'flex', gap: '12px', marginBottom: '14px' }}>
-        <div style={{ flex: 1 }}><div style={{ ...mono, fontSize: '10px', color: '#6b7075', letterSpacing: '0.1em', marginBottom: '7px' }}>PESO (KG)</div><input value={form.weight} onChange={e => set('weight', e.target.value)} placeholder="76" style={inputStyle} /></div>
-        <div style={{ flex: 1 }}><div style={{ ...mono, fontSize: '10px', color: '#6b7075', letterSpacing: '0.1em', marginBottom: '7px' }}>EDAD</div><input value={form.age} onChange={e => set('age', e.target.value)} placeholder="31" style={inputStyle} /></div>
+        <div style={{ flex: 1 }}><div style={{ ...mono, fontSize: '10px', color: '#6b7075', letterSpacing: '0.1em', marginBottom: '7px' }}>PESO (KG)</div><input value={form.weight} onChange={e => set('weight', e.target.value)} placeholder="opcional" style={inputStyle} /></div>
+        <div style={{ flex: 1 }}><div style={{ ...mono, fontSize: '10px', color: '#6b7075', letterSpacing: '0.1em', marginBottom: '7px' }}>EDAD</div><input value={form.age} onChange={e => set('age', e.target.value)} placeholder="opcional" style={inputStyle} /></div>
       </div>
       <div style={{ display: 'flex', gap: '12px', marginBottom: '22px' }}>
-        <div style={{ flex: 1 }}><div style={{ ...mono, fontSize: '10px', color: '#6b7075', letterSpacing: '0.1em', marginBottom: '7px' }}>FC MÁX</div><input value={form.hrMax} onChange={e => set('hrMax', e.target.value)} placeholder="188" style={inputStyle} /></div>
-        <div style={{ flex: 1 }}><div style={{ ...mono, fontSize: '10px', color: '#6b7075', letterSpacing: '0.1em', marginBottom: '7px' }}>KM / SEMANA</div><input value={form.weekKm} onChange={e => set('weekKm', e.target.value)} placeholder="40" style={inputStyle} /></div>
+        <div style={{ flex: 1 }}><div style={{ ...mono, fontSize: '10px', color: '#6b7075', letterSpacing: '0.1em', marginBottom: '7px' }}>FC MÁX</div><input value={form.hrMax} onChange={e => set('hrMax', e.target.value)} placeholder="opcional" style={inputStyle} /></div>
+        <div style={{ flex: 1 }}><div style={{ ...mono, fontSize: '10px', color: '#6b7075', letterSpacing: '0.1em', marginBottom: '7px' }}>KM / SEMANA</div><input value={form.weekKm} onChange={e => set('weekKm', e.target.value)} placeholder="opcional" style={inputStyle} /></div>
       </div>
-      <div style={{ ...mono, fontSize: '11px', letterSpacing: '0.14em', color: '#6b7075', marginBottom: '12px' }}>MARCAS ACTUALES</div>
+      <div style={{ ...mono, fontSize: '11px', letterSpacing: '0.14em', color: '#6b7075', marginBottom: '12px' }}>MARCAS ACTUALES <span style={{ color: '#3a3e42', fontWeight: 400 }}>· opcional</span></div>
       <div style={{ display: 'flex', gap: '10px', marginBottom: '28px' }}>
-        <div style={{ flex: 1 }}><div style={{ ...mono, fontSize: '10px', color: '#6b7075', letterSpacing: '0.1em', marginBottom: '7px' }}>5K</div><input value={form.t5k} onChange={e => set('t5k', e.target.value)} placeholder="22:48" style={{ ...inputStyle, textAlign: 'center', padding: '13px 6px' }} /></div>
-        <div style={{ flex: 1 }}><div style={{ ...mono, fontSize: '10px', color: '#6b7075', letterSpacing: '0.1em', marginBottom: '7px' }}>10K</div><input value={form.t10k} onChange={e => set('t10k', e.target.value)} placeholder="47:30" style={{ ...inputStyle, textAlign: 'center', padding: '13px 6px' }} /></div>
-        <div style={{ flex: 1 }}><div style={{ ...mono, fontSize: '10px', color: '#6b7075', letterSpacing: '0.1em', marginBottom: '7px' }}>21K</div><input value={form.t21k} onChange={e => set('t21k', e.target.value)} placeholder="1:45:00" style={{ ...inputStyle, textAlign: 'center', padding: '13px 6px' }} /></div>
+        <div style={{ flex: 1 }}><div style={{ ...mono, fontSize: '10px', color: '#6b7075', letterSpacing: '0.1em', marginBottom: '7px' }}>5K</div><input value={form.t5k} onChange={e => set('t5k', e.target.value)} placeholder="M:SS" style={{ ...inputStyle, textAlign: 'center', padding: '13px 6px' }} /></div>
+        <div style={{ flex: 1 }}><div style={{ ...mono, fontSize: '10px', color: '#6b7075', letterSpacing: '0.1em', marginBottom: '7px' }}>10K</div><input value={form.t10k} onChange={e => set('t10k', e.target.value)} placeholder="M:SS" style={{ ...inputStyle, textAlign: 'center', padding: '13px 6px' }} /></div>
+        <div style={{ flex: 1 }}><div style={{ ...mono, fontSize: '10px', color: '#6b7075', letterSpacing: '0.1em', marginBottom: '7px' }}>21K</div><input value={form.t21k} onChange={e => set('t21k', e.target.value)} placeholder="H:MM:SS" style={{ ...inputStyle, textAlign: 'center', padding: '13px 6px' }} /></div>
       </div>
       <button onClick={advance} style={btnPrimary}>{editing ? 'Guardar y volver' : 'Revisar y continuar'}</button>
     </div>
