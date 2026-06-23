@@ -259,6 +259,9 @@ export default function ProfilePage() {
         <div style={{ padding: '16px', fontSize: '15px', color: '#cdd0d2', borderBottom: '1px solid #1c1f23', display: 'flex', justifyContent: 'space-between' }}>
           Deportes <span style={{ color: '#6b7075' }}>{sportsLabel}</span>
         </div>
+        <div onClick={() => navigate('/fitness')} style={{ padding: '16px', fontSize: '15px', color: '#cdd0d2', borderBottom: '1px solid #1c1f23', display: 'flex', justifyContent: 'space-between', cursor: 'pointer' }}>
+          Estado de forma <span style={{ color: '#c8ff3c' }}>›</span>
+        </div>
         <div onClick={openEdit} style={{ padding: '16px', fontSize: '15px', color: '#cdd0d2', display: 'flex', justifyContent: 'space-between', cursor: 'pointer' }}>
           Recalcular plan con IA <span style={{ color: '#c8ff3c' }}>›</span>
         </div>
