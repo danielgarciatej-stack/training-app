@@ -447,6 +447,8 @@ export default function Onboarding() {
             )
 
             const items = [
+              s.weight             && { label: 'PESO',                 value: `${s.weight} kg` },
+              s.age                && { label: 'EDAD',                 value: `${s.age} años` },
               s.running_weekly_km  && { label: 'KM/SEM RUNNING',      value: `${s.running_weekly_km} km` },
               s.cycling_weekly_km  && { label: 'KM/SEM CICLISMO',     value: `${s.cycling_weekly_km} km` },
               s.avg_easy_pace      && { label: 'RITMO MEDIO',          value: `${s.avg_easy_pace}/km` },
