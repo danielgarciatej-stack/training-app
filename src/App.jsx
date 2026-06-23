@@ -8,6 +8,7 @@ import ActivityLog from './pages/ActivityLog'
 import Metas from './pages/Metas'
 import ProfilePage from './pages/ProfilePage'
 import StravaCallback from './pages/StravaCallback'
+import WeeklySummary from './pages/WeeklySummary'
 import Layout from './components/Layout'
 
 function AppRoutes() {
@@ -32,6 +33,7 @@ function AppRoutes() {
         <Route path="register" element={<ActivityLog />} />
         <Route path="metas" element={<Metas />} />
         <Route path="yo" element={<ProfilePage />} />
+        <Route path="weekly-summary" element={<WeeklySummary />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

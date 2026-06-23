@@ -68,6 +68,23 @@ export default function Dashboard() {
         }
       }
 
+      // Check if we need to show last week's summary
+      const prevWeekDate = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
+      const prevWeekStart = toLocalDateStr(getWeekStart(prevWeekDate))
+      const lastReviewed = localStorage.getItem('lastReviewedWeek')
+      if (lastReviewed !== prevWeekStart) {
+        const { data: prevSessions } = await supabase
+          .from('plan_sessions')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('week_start', prevWeekStart)
+          .order('day_of_week')
+        if (prevSessions?.length > 0 && !cancelled) {
+          navigate('/weekly-summary', { state: { prevWeekSessions: prevSessions, prevWeekStart } })
+          return
+        }
+      }
+
       // Load this week's sessions
       const weekStart = toLocalDateStr(getWeekStart(today))
       const { data: sessions } = await supabase
