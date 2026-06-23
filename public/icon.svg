@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="110" fill="#0a0b0d"/>
+  <!-- Running figure -->
+  <circle cx="285" cy="145" r="38" fill="#c8ff3c"/>
+  <!-- Body -->
+  <path d="M230 210 Q255 195 285 200 L320 240 L290 310 L310 390" stroke="#c8ff3c" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Left arm -->
+  <path d="M270 240 L220 290" stroke="#c8ff3c" stroke-width="20" stroke-linecap="round" fill="none"/>
+  <!-- Right arm -->
+  <path d="M305 250 L350 220" stroke="#c8ff3c" stroke-width="20" stroke-linecap="round" fill="none"/>
+  <!-- Left leg -->
+  <path d="M290 310 L240 370 L210 400" stroke="#c8ff3c" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Right leg -->
+  <path d="M310 390 L340 360" stroke="#c8ff3c" stroke-width="22" stroke-linecap="round" fill="none"/>
+</svg>
