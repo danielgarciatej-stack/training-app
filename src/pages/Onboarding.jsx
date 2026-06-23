@@ -99,6 +99,7 @@ export default function Onboarding() {
         stravaStats: profile.strava_stats,
         weight: profile.weight?.toString() || '',
         age: profile.age?.toString() || '',
+        hrMax: profile.hr_max?.toString() || '',
         weekKm: profile.running_weekly_km?.toString() || '',
       }
       setForm(updatedForm)
@@ -446,15 +447,21 @@ export default function Onboarding() {
             )
 
             const items = [
-              hasRunData && { label: 'KM/SEM RUNNING', value: s.running_weekly_km ? `${s.running_weekly_km} km` : '—' },
-              hasCycleData && { label: 'KM/SEM CICLISMO', value: s.cycling_weekly_km ? `${s.cycling_weekly_km} km` : '—' },
-              s.avg_easy_pace && { label: 'RITMO MEDIO', value: `${s.avg_easy_pace}/km` },
-              s.longest_run_km && { label: 'CARRERA MÁS LARGA', value: `${s.longest_run_km} km` },
-              s.avg_heart_rate && { label: 'FC MEDIA', value: `${s.avg_heart_rate} bpm` },
-              (s.total_runs_8w > 0) && { label: 'CARRERAS (8 SEM)', value: `${s.total_runs_8w}` },
-              (s.total_rides_8w > 0) && { label: 'RUTAS (8 SEM)', value: `${s.total_rides_8w}` },
-              s.ytd_run_km && { label: 'KM AÑO RUNNING', value: `${s.ytd_run_km} km` },
-              s.ytd_ride_km && { label: 'KM AÑO CICLISMO', value: `${s.ytd_ride_km} km` },
+              s.running_weekly_km  && { label: 'KM/SEM RUNNING',      value: `${s.running_weekly_km} km` },
+              s.cycling_weekly_km  && { label: 'KM/SEM CICLISMO',     value: `${s.cycling_weekly_km} km` },
+              s.avg_easy_pace      && { label: 'RITMO MEDIO',          value: `${s.avg_easy_pace}/km` },
+              s.longest_run_km     && { label: 'CARRERA MÁS LARGA',   value: `${s.longest_run_km} km` },
+              s.longest_ride_km    && { label: 'RUTA MÁS LARGA',      value: `${s.longest_ride_km} km` },
+              s.avg_heart_rate     && { label: 'FC MEDIA',             value: `${s.avg_heart_rate} bpm` },
+              s.max_heart_rate     && { label: 'FC MÁXIMA REAL',       value: `${s.max_heart_rate} bpm` },
+              s.elevation_run_8w   && { label: 'DESNIVEL RUNNING',     value: `${s.elevation_run_8w} m` },
+              s.elevation_ride_8w  && { label: 'DESNIVEL CICLISMO',    value: `${s.elevation_ride_8w} m` },
+              s.avg_watts          && { label: 'VATIOS MEDIOS',        value: `${s.avg_watts} W` },
+              s.max_watts          && { label: 'VATIOS MÁXIMOS',       value: `${s.max_watts} W` },
+              (s.total_runs_8w > 0)  && { label: 'CARRERAS (8 SEM)',   value: `${s.total_runs_8w}` },
+              (s.total_rides_8w > 0) && { label: 'RUTAS (8 SEM)',      value: `${s.total_rides_8w}` },
+              s.ytd_run_km         && { label: 'KM AÑO RUNNING',      value: `${s.ytd_run_km} km` },
+              s.ytd_ride_km        && { label: 'KM AÑO CICLISMO',     value: `${s.ytd_ride_km} km` },
             ].filter(Boolean)
 
             return (

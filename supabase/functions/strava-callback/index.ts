@@ -76,11 +76,36 @@ Deno.serve(async (req) => {
       ? Math.round(Math.max(...runs.map((a: any) => a.distance || 0)) / 100) / 10
       : (stats?.biggest_ride_distance ? null : null) // runs only
 
-    // Average heart rate
-    const runsWithHr = runs.filter((a: any) => a.average_heartrate && a.average_heartrate > 0)
-    const avgHr = runsWithHr.length > 0
-      ? Math.round(runsWithHr.reduce((s: number, a: any) => s + a.average_heartrate, 0) / runsWithHr.length)
+    // Average & max heart rate (from all activities with HR data)
+    const allWithHr = [...runs, ...rides].filter((a: any) => a.average_heartrate && a.average_heartrate > 0)
+    const avgHr = allWithHr.length > 0
+      ? Math.round(allWithHr.reduce((s: number, a: any) => s + a.average_heartrate, 0) / allWithHr.length)
       : null
+    const allWithMaxHr = [...runs, ...rides].filter((a: any) => a.max_heartrate && a.max_heartrate > 0)
+    const maxHr = allWithMaxHr.length > 0
+      ? Math.max(...allWithMaxHr.map((a: any) => a.max_heartrate))
+      : null
+
+    // Elevation gain (runs + rides, 8 weeks)
+    const totalElevationRun = runs.reduce((s: number, a: any) => s + (a.total_elevation_gain || 0), 0)
+    const totalElevationRide = rides.reduce((s: number, a: any) => s + (a.total_elevation_gain || 0), 0)
+
+    // Average watts (cycling with power meter)
+    const ridesWithWatts = rides.filter((a: any) => a.average_watts && a.average_watts > 0 && !a.device_watts === false)
+    const avgWatts = ridesWithWatts.length > 0
+      ? Math.round(ridesWithWatts.reduce((s: number, a: any) => s + a.average_watts, 0) / ridesWithWatts.length)
+      : null
+    const maxWatts = ridesWithWatts.length > 0
+      ? Math.max(...ridesWithWatts.map((a: any) => a.max_watts || a.average_watts))
+      : null
+
+    // Longest ride
+    const longestRide = rides.length > 0
+      ? Math.round(Math.max(...rides.map((a: any) => a.distance || 0)) / 100) / 10
+      : null
+
+    // Dominant sport
+    const dominantSport = runs.length >= rides.length ? (runs.length > 0 ? 'running' : null) : 'cycling'
 
     // Preferred training days (0=Mon...6=Sun)
     const allActivities = [...runs, ...rides]
@@ -112,11 +137,18 @@ Deno.serve(async (req) => {
       country: athlete.country || null,
       weight: athlete.weight || null,
       age,
+      dominant_sport: dominantSport,
       running_weekly_km: recentRunKm,
       cycling_weekly_km: recentRideKm,
       avg_easy_pace: avgPace,
       longest_run_km: longestRun,
+      longest_ride_km: longestRide,
       avg_heart_rate: avgHr,
+      max_heart_rate: maxHr,
+      elevation_run_8w: totalElevationRun > 0 ? Math.round(totalElevationRun) : null,
+      elevation_ride_8w: totalElevationRide > 0 ? Math.round(totalElevationRide) : null,
+      avg_watts: avgWatts,
+      max_watts: maxWatts,
       preferred_training_days: preferredDays.length > 0 ? preferredDays : null,
       total_runs_8w: runs.length,
       total_rides_8w: rides.length,
@@ -142,6 +174,7 @@ Deno.serve(async (req) => {
     if (avgPace) updateData.running_avg_pace = avgPace
     if (longestRun) updateData.running_longest_run = longestRun
     if (avgHr) updateData.running_avg_hr = avgHr
+    if (maxHr) updateData.hr_max = maxHr
     if (athlete.weight) updateData.weight = athlete.weight
     if (age) updateData.age = age
     if (preferredDays.length > 0) updateData.preferred_training_days = preferredDays
