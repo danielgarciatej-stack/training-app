@@ -96,7 +96,7 @@ Usa EXACTAMENTE estas fechas de inicio de semana, no inventes otras:
 - Semana 3: week_start="${weekStarts[2]}"
 - Semana 4: week_start="${weekStarts[3]}"
 
-En la semana 1, incluye sesiones SOLO para días con day_of_week > ${todayDow} (solo días futuros a partir de mañana).
+En la semana 1, incluye sesiones SOLO para días con day_of_week >= ${todayDow} (incluyendo hoy si está disponible).
 En las semanas 2, 3 y 4, incluye sesiones en todos los días disponibles del atleta.
 Las semanas deben progresar gradualmente en dificultad (semana 1 más ligera, semana 4 más exigente).
 
