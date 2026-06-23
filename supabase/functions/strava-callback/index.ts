@@ -48,10 +48,10 @@ Deno.serve(async (req) => {
     const activities = activitiesRes.ok ? await activitiesRes.json() : []
 
     // Calculate rich metrics from activities
-    const runs = activities.filter((a: any) => a.type === 'Run' || a.type === 'TrailRun')
-    const rides = activities.filter((a: any) => a.type === 'Ride' || a.type === 'VirtualRide')
+    const runs = Array.isArray(activities) ? activities.filter((a: any) => a.type === 'Run' || a.type === 'TrailRun') : []
+    const rides = Array.isArray(activities) ? activities.filter((a: any) => a.type === 'Ride' || a.type === 'VirtualRide') : []
 
-    // Weekly km (last 4 weeks)
+    // Weekly km (last 4 weeks) — prefer own calculation, fall back to Strava stats
     const fourWeeksAgo = Date.now() - 28 * 24 * 60 * 60 * 1000
     const recentRuns = runs.filter((a: any) => new Date(a.start_date).getTime() > fourWeeksAgo)
     const recentRunKm = recentRuns.length > 0
@@ -63,27 +63,30 @@ Deno.serve(async (req) => {
       ? Math.round(recentRides.reduce((s: number, a: any) => s + a.distance, 0) / 1000 / 4)
       : null
 
-    // Average easy pace (from runs slower than 5:30/km = 3.03 m/s)
-    const easyRuns = runs.filter((a: any) => a.average_speed && a.average_speed < 3.03 && a.distance > 3000)
-    const avgPace = easyRuns.length > 0
-      ? mpsToMinKm(easyRuns.reduce((s: number, a: any) => s + a.average_speed, 0) / easyRuns.length)
-      : (runs.length > 0 ? mpsToMinKm(runs.reduce((s: number, a: any) => s + (a.average_speed || 0), 0) / runs.length) : null)
+    // Average easy pace (all runs with speed data)
+    const runsWithSpeed = runs.filter((a: any) => a.average_speed && a.average_speed > 0 && a.distance > 3000)
+    const easyRuns = runsWithSpeed.filter((a: any) => a.average_speed < 3.5) // slower than ~4:45/km
+    const paceRuns = easyRuns.length > 0 ? easyRuns : runsWithSpeed
+    const avgPace = paceRuns.length > 0
+      ? mpsToMinKm(paceRuns.reduce((s: number, a: any) => s + a.average_speed, 0) / paceRuns.length)
+      : null
 
     // Longest run (km)
     const longestRun = runs.length > 0
-      ? Math.round(Math.max(...runs.map((a: any) => a.distance)) / 100) / 10
-      : null
+      ? Math.round(Math.max(...runs.map((a: any) => a.distance || 0)) / 100) / 10
+      : (stats?.biggest_ride_distance ? null : null) // runs only
 
     // Average heart rate
-    const runsWithHr = runs.filter((a: any) => a.average_heartrate)
+    const runsWithHr = runs.filter((a: any) => a.average_heartrate && a.average_heartrate > 0)
     const avgHr = runsWithHr.length > 0
       ? Math.round(runsWithHr.reduce((s: number, a: any) => s + a.average_heartrate, 0) / runsWithHr.length)
       : null
 
     // Preferred training days (0=Mon...6=Sun)
+    const allActivities = [...runs, ...rides]
     const dayCount: Record<number, number> = {}
-    runs.forEach((a: any) => {
-      const d = new Date(a.start_date_local)
+    allActivities.forEach((a: any) => {
+      const d = new Date(a.start_date_local || a.start_date)
       const dow = d.getDay() === 0 ? 6 : d.getDay() - 1
       dayCount[dow] = (dayCount[dow] || 0) + 1
     })
@@ -93,20 +96,32 @@ Deno.serve(async (req) => {
       .map(e => parseInt(e[0]))
       .sort()
 
+    // Age from birthday
+    let age: number | null = null
+    if (athlete.birthday) {
+      const birth = new Date(athlete.birthday)
+      age = Math.floor((Date.now() - birth.getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+    }
+
+    const ytdRunKm = stats?.ytd_run_totals?.distance ? Math.round(stats.ytd_run_totals.distance / 1000) : null
+    const ytdRideKm = stats?.ytd_ride_totals?.distance ? Math.round(stats.ytd_ride_totals.distance / 1000) : null
+
     const stravaStats = {
       athlete_name: `${athlete.firstname} ${athlete.lastname}`,
-      city: athlete.city,
-      country: athlete.country,
-      weight: athlete.weight,
+      city: athlete.city || null,
+      country: athlete.country || null,
+      weight: athlete.weight || null,
+      age,
       running_weekly_km: recentRunKm,
       cycling_weekly_km: recentRideKm,
       avg_easy_pace: avgPace,
       longest_run_km: longestRun,
       avg_heart_rate: avgHr,
-      preferred_training_days: preferredDays,
+      preferred_training_days: preferredDays.length > 0 ? preferredDays : null,
       total_runs_8w: runs.length,
       total_rides_8w: rides.length,
-      ytd_run_km: stats?.ytd_run_totals?.distance ? Math.round(stats.ytd_run_totals.distance / 1000) : null,
+      ytd_run_km: ytdRunKm,
+      ytd_ride_km: ytdRideKm,
     }
 
     // Save to Supabase
@@ -128,6 +143,7 @@ Deno.serve(async (req) => {
     if (longestRun) updateData.running_longest_run = longestRun
     if (avgHr) updateData.running_avg_hr = avgHr
     if (athlete.weight) updateData.weight = athlete.weight
+    if (age) updateData.age = age
     if (preferredDays.length > 0) updateData.preferred_training_days = preferredDays
 
     const { error } = await supabase.from('profiles').update(updateData).eq('id', userId)

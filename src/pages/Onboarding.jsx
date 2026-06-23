@@ -10,7 +10,7 @@ const backStyle = { display: 'inline-flex', alignItems: 'center', gap: '5px', cu
 
 const STRAVA_CLIENT_ID = '260486'
 const STRAVA_REDIRECT = `${window.location.origin}/strava/callback`
-const STRAVA_URL = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(STRAVA_REDIRECT)}&approval_prompt=force&scope=read,activity:read_all`
+const STRAVA_URL = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(STRAVA_REDIRECT)}&approval_prompt=force&scope=read,profile:read_all,activity:read_all`
 
 const SPORTS = [
   { id: 'running', name: 'Running', desc: 'CARRERA A PIE' },
@@ -86,6 +86,7 @@ export default function Onboarding() {
         stravaConnected: true,
         stravaStats: profile.strava_stats,
         weight: profile.weight?.toString() || restoredForm.weight,
+        age: profile.age?.toString() || restoredForm.age,
         weekKm: profile.running_weekly_km?.toString() || restoredForm.weekKm,
       }
       setForm(updatedForm)
