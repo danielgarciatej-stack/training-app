@@ -110,6 +110,8 @@ export default function Onboarding() {
       setFieldErrors(errs)
       return Object.keys(errs).length === 0
     }
+    // Note: account is created async in advance() for welcome screen
+    return true
     if (screen === 'sport') {
       if (form.sports.length === 0) { setFieldErrors({ sports: 'Elige al menos un deporte' }); return false }
     }
@@ -122,8 +124,36 @@ export default function Onboarding() {
     return true
   }
 
-  const advance = () => {
+  const advance = async () => {
     if (!validate()) return
+    if (screen === 'welcome') {
+      setSaving(true)
+      setError('')
+      try {
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email: form.email,
+          password: form.password,
+          options: { data: { name: form.name } },
+        })
+        if (signUpError) throw signUpError
+        if (data.user) {
+          await supabase.from('profiles').insert({
+            id: data.user.id,
+            name: form.name,
+            sports: form.sports,
+            level: form.level,
+            training_days: form.training_days,
+            session_duration: form.time,
+            plan_status: 'none',
+          })
+        }
+      } catch (err) {
+        setError(err.message)
+        setSaving(false)
+        return
+      }
+      setSaving(false)
+    }
     if (editing) { setScreen('summary'); setEditing(false); return }
     const i = FLOW.indexOf(screen)
     setScreen(FLOW[Math.min(FLOW.length - 1, i + 1)])
@@ -139,27 +169,18 @@ export default function Onboarding() {
     setSaving(true)
     setError('')
     try {
-      // Create account first so strava-callback can save to profiles
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email: form.email,
-        password: form.password,
-        options: { data: { name: form.name } },
-      })
-      if (signUpError) throw signUpError
-      if (data.user) {
-        await supabase.from('profiles').insert({
-          id: data.user.id,
-          name: form.name,
-          sports: form.sports,
-          level: form.level,
-          training_days: form.training_days,
-          session_duration: form.time,
-          running_goal: form.goals.join(', '),
-          goal_event: form.eventName || null,
-          goal_date: form.eventDate || null,
-          plan_status: 'none',
-        })
-      }
+      // Update profile with latest form data before redirecting
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('No hay sesión activa')
+      await supabase.from('profiles').update({
+        sports: form.sports,
+        level: form.level,
+        training_days: form.training_days,
+        session_duration: form.time,
+        running_goal: form.goals.join(', '),
+        goal_event: form.eventName || null,
+        goal_date: form.eventDate || null,
+      }).eq('id', user.id)
       // Save form state to restore after OAuth
       localStorage.setItem('onboarding_form', JSON.stringify(form))
       localStorage.setItem('strava_from_onboarding', 'true')
@@ -174,53 +195,23 @@ export default function Onboarding() {
     setSaving(true)
     setError('')
     try {
-      // Check if account was already created (via Strava flow)
-      const { data: { user: existingUser } } = await supabase.auth.getUser()
-
-      if (existingUser) {
-        // Account already created via Strava — just update profile with final data
-        const { error: profileError } = await supabase.from('profiles').update({
-          sports: form.sports,
-          level: form.level,
-          training_days: form.training_days,
-          session_duration: form.time,
-          running_goal: form.goals.join(', '),
-          goal_event: form.eventName || null,
-          goal_date: form.eventDate || null,
-          age: form.age ? parseInt(form.age) : null,
-          weight: form.weight ? parseFloat(form.weight) : null,
-          running_weekly_km: form.weekKm ? parseFloat(form.weekKm) : null,
-          plan_status: 'none',
-        }).eq('id', existingUser.id)
-        if (profileError) throw profileError
-      } else {
-        // Create account now (manual flow, no Strava)
-        const { data, error: signUpError } = await supabase.auth.signUp({
-          email: form.email,
-          password: form.password,
-          options: { data: { name: form.name } },
-        })
-        if (signUpError) throw signUpError
-        if (data.user) {
-          const { error: profileError } = await supabase.from('profiles').insert({
-            id: data.user.id,
-            name: form.name,
-            sports: form.sports,
-            level: form.level,
-            training_days: form.training_days,
-            session_duration: form.time,
-            running_goal: form.goals.join(', '),
-            age: form.age ? parseInt(form.age) : null,
-            weight: form.weight ? parseFloat(form.weight) : null,
-            running_weekly_km: form.weekKm ? parseFloat(form.weekKm) : null,
-            strava_connected: false,
-            goal_date: form.eventDate || null,
-            goal_event: form.eventName || null,
-            plan_status: 'none',
-          })
-          if (profileError) throw profileError
-        }
-      }
+      // Account was created at step 1 — just update with all final data
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('No hay sesión activa')
+      const { error: profileError } = await supabase.from('profiles').update({
+        sports: form.sports,
+        level: form.level,
+        training_days: form.training_days,
+        session_duration: form.time,
+        running_goal: form.goals.join(', '),
+        goal_event: form.eventName || null,
+        goal_date: form.eventDate || null,
+        age: form.age ? parseInt(form.age) : null,
+        weight: form.weight ? parseFloat(form.weight) : null,
+        running_weekly_km: form.weekKm ? parseFloat(form.weekKm) : null,
+        plan_status: 'none',
+      }).eq('id', user.id)
+      if (profileError) throw profileError
     } catch (err) {
       setError(err.message)
       setSaving(false)
@@ -272,7 +263,9 @@ export default function Onboarding() {
         </div>
       </div>
       {error && <p style={{ color: '#ff6b6b', fontSize: '14px', textAlign: 'center', margin: '12px 0 0' }}>{error}</p>}
-      <button onClick={advance} style={{ ...btnPrimary, marginTop: '18px' }}>Crear cuenta</button>
+      <button onClick={advance} disabled={saving} style={{ ...btnPrimary, marginTop: '18px', opacity: saving ? 0.6 : 1 }}>
+        {saving ? 'Creando cuenta…' : 'Crear cuenta'}
+      </button>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '11px', color: '#5a5f64', marginTop: '14px', lineHeight: 1.45 }}>
         <span style={{ color: '#c8ff3c' }}>🔒</span> Tus datos están protegidos.
       </div>
