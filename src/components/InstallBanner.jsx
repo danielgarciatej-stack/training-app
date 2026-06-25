@@ -4,16 +4,11 @@ const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent)
 const isStandalone = window.navigator.standalone === true
 
 export default function InstallBanner() {
-  const [visible, setVisible] = useState(
-    isIOS && !isStandalone && !localStorage.getItem('install_banner_dismissed')
-  )
+  const [visible, setVisible] = useState(isIOS && !isStandalone)
 
   if (!visible) return null
 
-  const dismiss = () => {
-    localStorage.setItem('install_banner_dismissed', '1')
-    setVisible(false)
-  }
+  const dismiss = () => setVisible(false)
 
   return (
     <div style={{
