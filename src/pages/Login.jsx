@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import InstallBanner from '../components/InstallBanner'
 
 const mono = { fontFamily: "'JetBrains Mono', monospace" }
 const inputStyle = { width: '100%', background: '#131417', border: '1px solid #232629', borderRadius: '14px', padding: '15px 16px', fontFamily: "'Space Grotesk', sans-serif", fontSize: '16px', color: '#f2f3f0', outline: 'none' }
@@ -28,6 +29,7 @@ export default function Login() {
 
   return (
     <div style={{ minHeight: '100svh', background: '#0a0b0d', display: 'flex', flexDirection: 'column', padding: '32px 28px' }}>
+      <InstallBanner />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         <div style={{ marginBottom: '32px' }}>
           <div style={{ fontSize: '36px', fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1, marginBottom: '10px', color: '#f2f3f0' }}>

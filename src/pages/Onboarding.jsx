@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import InstallBanner from '../components/InstallBanner'
 
 const mono = { fontFamily: "'JetBrains Mono', monospace" }
 const inputStyle = { width: '100%', background: '#131417', border: '1px solid #232629', borderRadius: '14px', padding: '15px 16px', fontFamily: "'Space Grotesk', sans-serif", fontSize: '16px', color: '#f2f3f0', outline: 'none', '--placeholder-color': '#3a3e42' }
@@ -247,6 +248,7 @@ export default function Onboarding() {
   // ---- WELCOME ----
   if (screen === 'welcome') return (
     <div style={{ minHeight: '100svh', background: '#0a0b0d', padding: '66px 32px 28px', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+      <InstallBanner />
       <div style={{ ...mono, fontSize: '13px', letterSpacing: '0.2em', color: '#6b7075' }}>CREAR CUENTA</div>
       <div style={{ marginTop: '28px', marginBottom: '30px' }}>
         <div style={{ fontSize: '40px', fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1, color: '#f2f3f0' }}>
