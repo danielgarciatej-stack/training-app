@@ -16,9 +16,9 @@ const STEPS = [
   {
     icon: '📅',
     title: 'Tu semana de un vistazo',
-    body: 'Toca cualquier día para ver su sesión planificada. Los puntos indican entrenamientos. Al terminar, pulsa "Registrar sesión" para que la IA ajuste tu plan.',
+    body: 'Toca cualquier día para ver la sesión planificada. Cuando la termines, pulsa "Registrar sesión" para que la IA ajuste tu plan.',
     cardPos: 'mid',
-    spotFn: (w) => ({ x: 12, y: 88, sw: w - 24, sh: 52, r: 24 }),
+    spotFn: (w) => ({ x: 12, y: 86, sw: w - 24, sh: 80, r: 24 }),
     tail: 'up',
     tailTabFn: null,
   },

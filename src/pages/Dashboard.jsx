@@ -8,6 +8,7 @@ const mono = { fontFamily: "'JetBrains Mono', monospace" }
 const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 const WEEK_NAMES = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM']
 const DAY_LABELS = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
+const SPORT_ICONS = { running: '🏃', trail: '🏔️', cycling: '🚴', natacion: '🏊', triatlon: '🏅', futbol: '⚽' }
 
 function getWeekStart(date) {
   const d = new Date(date)
@@ -39,6 +40,10 @@ export default function Dashboard() {
   const today = new Date()
   const todayDow = today.getDay() === 0 ? 6 : today.getDay() - 1
   const [selectedDow, setSelectedDow] = useState(todayDow)
+
+  useEffect(() => {
+    if (location.state?.showTutorial) setShowTutorial(true)
+  }, [location.state?.showTutorial])
 
   useEffect(() => {
     let cancelled = false
@@ -228,8 +233,9 @@ export default function Dashboard() {
           return (
             <div key={dow} onClick={() => { if (hasSess || isToday) setSelectedDow(dow) }} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '7px', cursor: hasSess ? 'pointer' : 'default' }}>
               <span style={{ ...mono, fontSize: '10px', color: isToday ? '#c8ff3c' : '#6b7075' }}>{DAY_LABELS[dow]}</span>
-              <div style={{ width: '38px', height: '46px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', ...mono, fontSize: '15px', fontWeight: 600, ...pillStyle }}>
-                {d.getDate()}
+              <div style={{ width: '38px', height: '52px', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1px', ...mono, fontSize: '15px', fontWeight: 600, ...pillStyle }}>
+                <span>{d.getDate()}</span>
+                {hasSess && <span style={{ fontSize: '11px', lineHeight: 1, fontFamily: 'inherit' }}>{SPORT_ICONS[sess?.sport] || '🏃'}</span>}
               </div>
             </div>
           )

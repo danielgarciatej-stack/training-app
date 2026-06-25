@@ -42,7 +42,7 @@ export default function ProfilePage() {
   const [syncing, setSyncing] = useState(false)
   const [syncMsg, setSyncMsg] = useState('')
   const [screen, setScreen] = useState('profile') // 'profile' | 'edit' | 'saving'
-  const [showTutorial, setShowTutorial] = useState(false)
+  const [showTutorial, setShowTutorial] = useState(false) // unused, kept for safety
   const [edit, setEdit] = useState(null) // editable copy of profile fields
   const [saving, setSaving] = useState(false)
 
@@ -225,7 +225,6 @@ export default function ProfilePage() {
   // ---- MAIN PROFILE ----
   return (
     <div style={{ padding: '18px 24px 24px', background: '#0a0b0d', minHeight: '100%' }}>
-      {showTutorial && <Tutorial onClose={() => setShowTutorial(false)} />}
       <div style={{ fontSize: '24px', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: '22px', color: '#f2f3f0' }}>Perfil</div>
 
       {/* Avatar + info */}
@@ -278,7 +277,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <button onClick={() => setShowTutorial(true)} style={{ width: '100%', background: 'transparent', border: '1px solid #232629', borderRadius: '14px', padding: '15px', fontSize: '14px', color: '#9a9ea2', cursor: 'pointer', marginBottom: '10px' }}>
+      <button onClick={() => { localStorage.removeItem('tutorial_done'); navigate('/', { state: { showTutorial: true } }) }} style={{ width: '100%', background: 'transparent', border: '1px solid #232629', borderRadius: '14px', padding: '15px', fontSize: '14px', color: '#9a9ea2', cursor: 'pointer', marginBottom: '10px' }}>
         Ver tutorial
       </button>
 
