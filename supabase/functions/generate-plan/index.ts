@@ -132,11 +132,12 @@ Todos los valores numéricos deben ser números, no strings.`
 
     const text = message.content[0].text.trim()
 
-    // Extract JSON (handle cases where model adds markdown code blocks)
+    // Extract JSON robustly — find outermost { } ignoring any markdown wrapping
     let jsonText = text
-    if (text.includes('```')) {
-      const match = text.match(/```(?:json)?\s*([\s\S]*?)```/)
-      if (match) jsonText = match[1].trim()
+    const firstBrace = text.indexOf('{')
+    const lastBrace = text.lastIndexOf('}')
+    if (firstBrace !== -1 && lastBrace !== -1) {
+      jsonText = text.slice(firstBrace, lastBrace + 1)
     }
 
     const result = JSON.parse(jsonText)
