@@ -71,6 +71,10 @@ export default function ProfilePage() {
       running_goals: parseGoals(profile?.running_goal),
       goal_event: profile?.goal_event || '',
       goal_date: profile?.goal_date || '',
+      weight: profile?.weight?.toString() || '',
+      age: profile?.age?.toString() || '',
+      hr_max: profile?.hr_max?.toString() || '',
+      week_km: profile?.running_weekly_km?.toString() || '',
     })
     setScreen('edit')
   }
@@ -86,6 +90,10 @@ export default function ProfilePage() {
       running_goal: edit.running_goals?.length ? JSON.stringify(edit.running_goals) : null,
       goal_event: edit.goal_event || null,
       goal_date: edit.goal_date || null,
+      weight: edit.weight ? parseFloat(edit.weight) : null,
+      age: edit.age ? parseInt(edit.age) : null,
+      hr_max: edit.hr_max ? parseInt(edit.hr_max) : null,
+      running_weekly_km: edit.week_km ? parseFloat(edit.week_km) : null,
       plan_status: 'none',
     }).eq('id', user.id)
     if (updateError) {
@@ -214,6 +222,49 @@ export default function ProfilePage() {
 
         <div style={{ ...mono, fontSize: '10px', letterSpacing: '0.12em', color: '#6b7075', marginBottom: '8px' }}>FECHA OBJETIVO (opcional)</div>
         <input type="date" value={edit.goal_date} onChange={e => setEdit(f => ({ ...f, goal_date: e.target.value }))} style={{ width: '100%', background: '#0f1012', border: '1px solid #232629', borderRadius: '12px', padding: '13px 14px', fontFamily: "'Space Grotesk', sans-serif", fontSize: '15px', color: '#f2f3f0', outline: 'none', colorScheme: 'dark', marginBottom: '28px' }} />
+
+        {/* Datos físicos */}
+        <div style={{ ...mono, fontSize: '10px', letterSpacing: '0.12em', color: '#6b7075', marginBottom: '10px' }}>DATOS FÍSICOS</div>
+
+        {/* Strava */}
+        <div style={{ background: '#131417', border: '1px solid #232629', borderRadius: '14px', overflow: 'hidden', marginBottom: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: profile?.strava_connected ? '#c8ff3c' : '#5a5f64', flexShrink: 0 }} />
+              <span style={{ fontSize: '14px', color: '#f2f3f0' }}>Strava</span>
+              {syncMsg && <span style={{ ...mono, fontSize: '10px', color: '#c8ff3c' }}>{syncMsg}</span>}
+            </div>
+            {profile?.strava_connected
+              ? <button onClick={handleStravaSync} disabled={syncing} style={{ background: 'transparent', border: '1px solid #2a2e33', borderRadius: '10px', padding: '6px 12px', ...mono, fontSize: '10px', color: syncing ? '#6b7075' : '#c8ff3c', cursor: syncing ? 'default' : 'pointer', letterSpacing: '0.06em' }}>
+                  {syncing ? 'SINCRONIZANDO…' : 'SINCRONIZAR'}
+                </button>
+              : <button onClick={() => window.location.href = STRAVA_URL} style={{ background: '#fc4c02', border: 'none', borderRadius: '10px', padding: '7px 13px', fontSize: '13px', fontWeight: 600, color: '#fff', cursor: 'pointer', fontFamily: "'Space Grotesk', sans-serif" }}>
+                  Conectar
+                </button>
+            }
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ ...mono, fontSize: '10px', letterSpacing: '0.1em', color: '#6b7075', marginBottom: '7px' }}>PESO (KG)</div>
+            <input value={edit.weight} onChange={e => setEdit(f => ({ ...f, weight: e.target.value }))} placeholder="opcional" style={{ width: '100%', background: '#0f1012', border: '1px solid #232629', borderRadius: '12px', padding: '13px 14px', fontFamily: "'Space Grotesk', sans-serif", fontSize: '15px', color: '#f2f3f0', outline: 'none' }} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ ...mono, fontSize: '10px', letterSpacing: '0.1em', color: '#6b7075', marginBottom: '7px' }}>EDAD</div>
+            <input value={edit.age} onChange={e => setEdit(f => ({ ...f, age: e.target.value }))} placeholder="opcional" style={{ width: '100%', background: '#0f1012', border: '1px solid #232629', borderRadius: '12px', padding: '13px 14px', fontFamily: "'Space Grotesk', sans-serif", fontSize: '15px', color: '#f2f3f0', outline: 'none' }} />
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '22px' }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ ...mono, fontSize: '10px', letterSpacing: '0.1em', color: '#6b7075', marginBottom: '7px' }}>FC MÁX</div>
+            <input value={edit.hr_max} onChange={e => setEdit(f => ({ ...f, hr_max: e.target.value }))} placeholder="opcional" style={{ width: '100%', background: '#0f1012', border: '1px solid #232629', borderRadius: '12px', padding: '13px 14px', fontFamily: "'Space Grotesk', sans-serif", fontSize: '15px', color: '#f2f3f0', outline: 'none' }} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ ...mono, fontSize: '10px', letterSpacing: '0.1em', color: '#6b7075', marginBottom: '7px' }}>KM / SEMANA</div>
+            <input value={edit.week_km} onChange={e => setEdit(f => ({ ...f, week_km: e.target.value }))} placeholder="opcional" style={{ width: '100%', background: '#0f1012', border: '1px solid #232629', borderRadius: '12px', padding: '13px 14px', fontFamily: "'Space Grotesk', sans-serif", fontSize: '15px', color: '#f2f3f0', outline: 'none' }} />
+          </div>
+        </div>
 
         <button onClick={saveAndRecalculate} disabled={saving || edit.sports.length === 0} style={{ width: '100%', background: '#c8ff3c', border: 'none', borderRadius: '14px', padding: '17px', fontFamily: "'Space Grotesk', sans-serif", fontSize: '16px', fontWeight: 600, color: '#0a0b0d', cursor: 'pointer', opacity: (saving || edit.sports.length === 0) ? 0.6 : 1 }}>
           {saving ? 'Guardando…' : 'Guardar y regenerar plan'}
