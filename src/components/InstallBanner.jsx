@@ -19,8 +19,8 @@ export default function InstallBanner() {
     }}>
       <div style={{ width: 38, height: 38, background: '#1d2024', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <path d="M12 16V6m0 0L8.5 9.5M12 6l3.5 3.5" stroke="#c8ff3c" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-          <rect x="4" y="14" width="16" height="7" rx="2" stroke="#c8ff3c" strokeWidth="1.8" />
+          <path d="M12 3v11m0-11L8.5 6.5M12 3l3.5 3.5" stroke="#c8ff3c" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M8 9H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-2" stroke="#c8ff3c" strokeWidth="1.8" strokeLinecap="round" />
         </svg>
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
