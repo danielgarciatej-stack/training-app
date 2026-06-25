@@ -6,7 +6,8 @@ import Tutorial from '../components/Tutorial'
 const mono = { fontFamily: "'JetBrains Mono', monospace" }
 
 const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
-const DAYS_SHORT = ['D', 'L', 'M', 'X', 'J', 'V', 'S']
+const WEEK_NAMES = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM']
+const DAY_LABELS = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
 
 function getWeekStart(date) {
   const d = new Date(date)
@@ -37,6 +38,7 @@ export default function Dashboard() {
 
   const today = new Date()
   const todayDow = today.getDay() === 0 ? 6 : today.getDay() - 1
+  const [selectedDow, setSelectedDow] = useState(todayDow)
 
   useEffect(() => {
     let cancelled = false
@@ -44,7 +46,6 @@ export default function Dashboard() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user || cancelled) return
 
-      // If coming from recalculate flow, use the already-updated profile directly
       const forceGenerate = !!location.state?.generating
       let prof
       if (forceGenerate && location.state?.updatedProfile) {
@@ -58,7 +59,6 @@ export default function Dashboard() {
       prof = fetched
       if (prof) setProfile(prof)
 
-      // Auto-generate if no plan exists yet
       if (prof?.plan_status !== 'active') {
         const { count: totalCount } = await supabase
           .from('plan_sessions')
@@ -70,7 +70,6 @@ export default function Dashboard() {
         }
       }
 
-      // Check if we need to show last week's summary
       const prevWeekDate = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
       const prevWeekStart = toLocalDateStr(getWeekStart(prevWeekDate))
       const lastReviewed = localStorage.getItem('lastReviewedWeek')
@@ -87,7 +86,6 @@ export default function Dashboard() {
         }
       }
 
-      // Load this week's sessions
       const weekStart = toLocalDateStr(getWeekStart(today))
       const { data: sessions } = await supabase
         .from('plan_sessions')
@@ -155,14 +153,21 @@ export default function Dashboard() {
   const hour = today.getHours()
   const dayLabel = `${DAYS[today.getDay()].toUpperCase()} ${today.getDate()} ${today.toLocaleDateString('es-ES', { month: 'short' }).toUpperCase()}`
 
-  // Week strip: map 0=Mon...6=Sun
   const weekDays = [0, 1, 2, 3, 4, 5, 6]
   const completedCount = weekSessions.filter(s => s.status === 'completed').length
   const totalSessions = weekSessions.length
 
+  // The session to display depends on which day is selected in the strip
+  const displaySession = weekSessions.find(s => s.day_of_week === selectedDow) || null
+  const isDisplayingToday = selectedDow === todayDow
+  const sessionLabel = isDisplayingToday
+    ? (displaySession?.status === 'completed' ? 'COMPLETADO' : 'HOY')
+    : WEEK_NAMES[selectedDow]
+
   return (
     <div style={{ padding: '14px 24px 24px', minHeight: '100%', background: '#0a0b0d' }}>
       {showTutorial && <Tutorial onClose={() => setShowTutorial(false)} />}
+
       {/* Header */}
       <div style={{ marginBottom: '20px', paddingTop: '14px' }}>
         <div style={{ fontSize: '22px', fontWeight: 600, letterSpacing: '-0.01em', color: '#f2f3f0' }}>
@@ -196,27 +201,33 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Week strip */}
+      {/* Week strip — clickable */}
       <div style={{ display: 'flex', gap: '6px', marginBottom: '18px' }}>
         {weekDays.map(dow => {
           const sess = weekSessions.find(s => s.day_of_week === dow)
           const isToday = dow === todayDow
+          const isSelected = dow === selectedDow
           const isDone = sess?.status === 'completed'
           const hasSess = !!sess
-          const pillStyle = isDone
-            ? { background: '#c8ff3c', color: '#0a0b0d', border: '1px solid #c8ff3c' }
-            : isToday
-            ? { background: '#131417', color: '#c8ff3c', border: '2px solid #c8ff3c' }
-            : hasSess
-            ? { background: '#131417', color: '#f2f3f0', border: '1px solid #232629' }
-            : { background: 'transparent', color: '#5a5f64', border: '1px solid #16191c' }
-          // 0=Mon, 1=Tue... → L M X J V S D
-          const labels = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
           const dateOffset = dow - todayDow
           const d = new Date(today); d.setDate(d.getDate() + dateOffset)
+
+          let pillStyle
+          if (isDone) {
+            pillStyle = { background: isSelected ? '#a8df2c' : '#c8ff3c', color: '#0a0b0d', border: `${isSelected ? '2' : '1'}px solid #c8ff3c` }
+          } else if (isToday) {
+            pillStyle = { background: '#131417', color: '#c8ff3c', border: `${isSelected ? '2' : '1'}px solid #c8ff3c` }
+          } else if (isSelected && hasSess) {
+            pillStyle = { background: '#1d2024', color: '#f2f3f0', border: '2px solid #f2f3f0' }
+          } else if (hasSess) {
+            pillStyle = { background: '#131417', color: '#cdd0d2', border: '1px solid #232629' }
+          } else {
+            pillStyle = { background: 'transparent', color: '#5a5f64', border: '1px solid #16191c' }
+          }
+
           return (
-            <div key={dow} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '7px' }}>
-              <span style={{ ...mono, fontSize: '10px', color: isToday ? '#c8ff3c' : '#6b7075' }}>{labels[dow]}</span>
+            <div key={dow} onClick={() => { if (hasSess || isToday) setSelectedDow(dow) }} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '7px', cursor: hasSess ? 'pointer' : 'default' }}>
+              <span style={{ ...mono, fontSize: '10px', color: isToday ? '#c8ff3c' : '#6b7075' }}>{DAY_LABELS[dow]}</span>
               <div style={{ width: '38px', height: '46px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', ...mono, fontSize: '15px', fontWeight: 600, ...pillStyle }}>
                 {d.getDate()}
               </div>
@@ -225,69 +236,81 @@ export default function Dashboard() {
         })}
       </div>
 
-      {/* Today session card */}
-      {todaySession ? (
-        <div style={{ background: '#131417', border: `1px solid ${todaySession.status === 'completed' ? 'rgba(200,255,60,0.3)' : '#232629'}`, borderRadius: '20px', padding: '20px', marginBottom: '14px', position: 'relative', overflow: 'hidden' }}>
+      {/* Session card for selected day */}
+      {displaySession ? (
+        <div style={{ background: '#131417', border: `1px solid ${displaySession.status === 'completed' ? 'rgba(200,255,60,0.3)' : '#232629'}`, borderRadius: '20px', padding: '20px', marginBottom: '12px', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', left: 0, top: '20px', bottom: '20px', width: '3px', background: '#c8ff3c', borderRadius: '0 2px 2px 0' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
             <div>
               <div style={{ ...mono, fontSize: '10px', letterSpacing: '0.14em', color: '#c8ff3c', marginBottom: '9px' }}>
-                {todaySession.status === 'completed' ? 'COMPLETADO' : 'HOY'} · {(todaySession.sport || 'RUNNING').toUpperCase()}
+                {sessionLabel} · {(displaySession.sport || 'RUNNING').toUpperCase()}
               </div>
-              <div style={{ fontSize: '24px', fontWeight: 600, letterSpacing: '-0.01em', color: '#f2f3f0' }}>{todaySession.session_type}</div>
+              <div style={{ fontSize: '24px', fontWeight: 600, letterSpacing: '-0.01em', color: '#f2f3f0' }}>{displaySession.session_type}</div>
               <div style={{ fontSize: '13px', color: '#8a8e92', marginTop: '6px' }}>
-                {todaySession.sport === 'running' ? 'Running' : 'Ciclismo'}
+                {displaySession.sport === 'running' ? 'Running' : 'Ciclismo'}
               </div>
             </div>
-            {todaySession.status === 'completed'
+            {displaySession.status === 'completed'
               ? <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#c8ff3c', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 700, color: '#0a0b0d', flexShrink: 0 }}>✓</div>
               : <div style={{ textAlign: 'center', background: '#0f1012', border: '1px solid #232629', borderRadius: '12px', padding: '9px 11px' }}>
-                  <div style={{ ...mono, fontSize: '20px', fontWeight: 700, color: '#c8ff3c', lineHeight: 1 }}>{todaySession.target_duration || '—'}</div>
+                  <div style={{ ...mono, fontSize: '20px', fontWeight: 700, color: '#c8ff3c', lineHeight: 1 }}>{displaySession.target_duration || '—'}</div>
                   <div style={{ ...mono, fontSize: '8px', color: '#6b7075', letterSpacing: '0.12em', marginTop: '3px' }}>MIN</div>
                 </div>
             }
           </div>
           <div style={{ display: 'flex', gap: '22px', marginBottom: '18px' }}>
-            {(todaySession.actual_distance || todaySession.target_distance) && (
+            {(displaySession.actual_distance || displaySession.target_distance) && (
               <div>
                 <div style={{ ...mono, fontSize: '10px', color: '#6b7075', letterSpacing: '0.1em', marginBottom: '5px' }}>DISTANCIA</div>
                 <div style={{ ...mono, fontSize: '22px', fontWeight: 500, color: '#f2f3f0' }}>
-                  {todaySession.actual_distance || todaySession.target_distance}<span style={{ fontSize: '12px', color: '#6b7075' }}> km</span>
+                  {displaySession.actual_distance || displaySession.target_distance}<span style={{ fontSize: '12px', color: '#6b7075' }}> km</span>
                 </div>
               </div>
             )}
-            {(todaySession.actual_duration || todaySession.target_duration) && (
+            {(displaySession.actual_duration || displaySession.target_duration) && (
               <div>
                 <div style={{ ...mono, fontSize: '10px', color: '#6b7075', letterSpacing: '0.1em', marginBottom: '5px' }}>DURACIÓN</div>
                 <div style={{ ...mono, fontSize: '22px', fontWeight: 500, color: '#f2f3f0' }}>
-                  {todaySession.actual_duration || todaySession.target_duration}<span style={{ fontSize: '12px', color: '#6b7075' }}> min</span>
+                  {displaySession.actual_duration || displaySession.target_duration}<span style={{ fontSize: '12px', color: '#6b7075' }}> min</span>
                 </div>
               </div>
             )}
-            {(todaySession.actual_pace || todaySession.target_pace) && (
+            {(displaySession.actual_pace || displaySession.target_pace) && (
               <div>
                 <div style={{ ...mono, fontSize: '10px', color: '#6b7075', letterSpacing: '0.1em', marginBottom: '5px' }}>RITMO</div>
                 <div style={{ ...mono, fontSize: '22px', fontWeight: 500, color: '#c8ff3c' }}>
-                  {todaySession.actual_pace || todaySession.target_pace}
+                  {displaySession.actual_pace || displaySession.target_pace}
                 </div>
               </div>
             )}
           </div>
-          {todaySession.status === 'completed' ? (
+          {displaySession.status === 'completed' ? (
             <div style={{ background: '#161a12', border: '1px solid rgba(200,255,60,0.2)', borderRadius: '12px', padding: '13px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span style={{ fontSize: '13px', color: '#c8ff3c' }}>✓</span>
               <span style={{ fontSize: '14px', color: '#dfeecb' }}>Sesión registrada correctamente</span>
             </div>
-          ) : (
-            <button onClick={() => navigate('/register', { state: { session: todaySession } })} style={{ width: '100%', background: '#c8ff3c', border: 'none', borderRadius: '12px', padding: '14px', fontSize: '15px', fontWeight: 600, color: '#0a0b0d', cursor: 'pointer' }}>
+          ) : isDisplayingToday && (
+            <button onClick={() => navigate('/register', { state: { session: displaySession } })} style={{ width: '100%', background: '#c8ff3c', border: 'none', borderRadius: '12px', padding: '14px', fontSize: '15px', fontWeight: 600, color: '#0a0b0d', cursor: 'pointer' }}>
               Registrar sesión
             </button>
           )}
         </div>
       ) : !generatingPlan && (
-        <div style={{ background: '#131417', border: '1px solid #232629', borderRadius: '20px', padding: '20px', marginBottom: '14px', textAlign: 'center' }}>
-          <div style={{ fontSize: '15px', color: '#9a9ea2' }}>Sin entrenamiento hoy 😴</div>
+        <div style={{ background: '#131417', border: '1px solid #232629', borderRadius: '20px', padding: '20px', marginBottom: '12px', textAlign: 'center' }}>
+          <div style={{ fontSize: '15px', color: '#9a9ea2' }}>{isDisplayingToday ? 'Sin entrenamiento hoy 😴' : 'Sin entrenamiento este día'}</div>
           <div style={{ fontSize: '13px', color: '#6b7075', marginTop: '6px' }}>Día de descanso</div>
+        </div>
+      )}
+
+      {/* Description right below the session card */}
+      {displaySession?.description && (
+        <div style={{ background: '#131417', border: '1px solid #1c1f23', borderRadius: '14px', padding: '14px 16px', marginBottom: '14px' }}>
+          <div style={{ ...mono, fontSize: '9px', color: '#6b7075', letterSpacing: '0.12em', marginBottom: '8px' }}>
+            DESCRIPCIÓN · {WEEK_NAMES[displaySession.day_of_week]}
+          </div>
+          <div style={{ fontSize: '13px', color: '#9a9ea2', lineHeight: 1.6 }}>
+            {displaySession.description}
+          </div>
         </div>
       )}
 
@@ -305,8 +328,8 @@ export default function Dashboard() {
         <div style={{ ...mono, fontSize: '11px', color: '#6b7075' }}>{completedCount}/{totalSessions}</div>
       </div>
 
-      {/* Week / progress */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '11px', marginBottom: '14px' }}>
+      {/* Week / Próxima */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '11px' }}>
         <div style={{ background: '#131417', border: '1px solid #232629', borderRadius: '16px', padding: '15px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '10px' }}>
             <span style={{ ...mono, fontSize: '9px', color: '#6b7075', letterSpacing: '0.1em' }}>SEMANA</span>
@@ -325,7 +348,7 @@ export default function Dashboard() {
           {nextSession ? (
             <>
               <div style={{ ...mono, fontSize: '11px', color: '#c8ff3c', marginBottom: '5px' }}>
-                {['LUN','MAR','MIÉ','JUE','VIE','SÁB','DOM'][nextSession.day_of_week]}
+                {WEEK_NAMES[nextSession.day_of_week]}
               </div>
               <div style={{ fontSize: '14px', fontWeight: 600, color: '#f2f3f0', marginBottom: '3px' }}>{nextSession.session_type}</div>
               <div style={{ ...mono, fontSize: '11px', color: '#6b7075' }}>
@@ -337,18 +360,6 @@ export default function Dashboard() {
           )}
         </div>
       </div>
-
-      {/* Next session description */}
-      {nextSession?.description && (
-        <div onClick={() => navigate('/plan')} style={{ background: '#131417', border: '1px solid #1c1f23', borderRadius: '16px', padding: '16px 18px', cursor: 'pointer' }}>
-          <div style={{ ...mono, fontSize: '9px', color: '#6b7075', letterSpacing: '0.12em', marginBottom: '8px' }}>
-            DESCRIPCIÓN · {['LUN','MAR','MIÉ','JUE','VIE','SÁB','DOM'][nextSession.day_of_week]}
-          </div>
-          <div style={{ fontSize: '13px', color: '#9a9ea2', lineHeight: 1.6 }}>
-            {nextSession.description}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

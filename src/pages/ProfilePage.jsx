@@ -57,13 +57,18 @@ export default function ProfilePage() {
     setProfile(data)
   }
 
+  const parseGoals = (val) => {
+    if (!val) return []
+    try { return JSON.parse(val) } catch { return val ? [val] : [] }
+  }
+
   const openEdit = () => {
     setEdit({
       sports: profile?.sports || ['running'],
       level: profile?.level || 'inter',
       training_days: profile?.training_days || [0, 1, 2, 3],
       session_duration: profile?.session_duration || 60,
-      running_goal: profile?.running_goal || '',
+      running_goals: parseGoals(profile?.running_goal),
       goal_event: profile?.goal_event || '',
       goal_date: profile?.goal_date || '',
     })
@@ -78,7 +83,7 @@ export default function ProfilePage() {
       level: edit.level,
       training_days: edit.training_days,
       session_duration: edit.session_duration,
-      running_goal: edit.running_goal || null,
+      running_goal: edit.running_goals?.length ? JSON.stringify(edit.running_goals) : null,
       goal_event: edit.goal_event || null,
       goal_date: edit.goal_date || null,
       plan_status: 'none',
@@ -190,14 +195,17 @@ export default function ProfilePage() {
         </div>
 
         {/* Objetivo */}
-        <div style={{ ...mono, fontSize: '10px', letterSpacing: '0.12em', color: '#6b7075', marginBottom: '10px' }}>OBJETIVO PRINCIPAL</div>
+        <div style={{ ...mono, fontSize: '10px', letterSpacing: '0.12em', color: '#6b7075', marginBottom: '10px' }}>OBJETIVOS (puedes seleccionar varios)</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '22px' }}>
-          {GOALS.map(g => (
-            <div key={g.id} onClick={() => setEdit(e => ({ ...e, running_goal: g.id }))} style={{ ...card(edit.running_goal === g.id), display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '15px', color: '#f2f3f0' }}>{g.name}</span>
-              {edit.running_goal === g.id && <span style={{ color: '#c8ff3c' }}>✓</span>}
-            </div>
-          ))}
+          {GOALS.map(g => {
+            const on = edit.running_goals?.includes(g.id)
+            return (
+              <div key={g.id} onClick={() => setEdit(e => ({ ...e, running_goals: on ? e.running_goals.filter(x => x !== g.id) : [...(e.running_goals || []), g.id] }))} style={{ ...card(on), display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '15px', color: '#f2f3f0' }}>{g.name}</span>
+                {on && <span style={{ color: '#c8ff3c' }}>✓</span>}
+              </div>
+            )
+          })}
         </div>
 
         {/* Evento */}
