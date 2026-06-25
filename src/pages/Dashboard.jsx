@@ -114,6 +114,7 @@ export default function Dashboard() {
   const generatePlan = async (userId, profileData) => {
     setGeneratingPlan(true)
     setPlanError('')
+    let failed = false
     try {
       const { data: fnData, error: fnError } = await supabase.functions.invoke('generate-plan', {
         body: { profile: { ...profileData, id: userId } },
@@ -147,10 +148,11 @@ export default function Dashboard() {
         setNextSession(upcoming || null)
       }
     } catch (err) {
+      failed = true
       setPlanError(err.message)
     } finally {
       setGeneratingPlan(false)
-      if (!localStorage.getItem('tutorial_done')) setShowTutorial(true)
+      if (!failed && !localStorage.getItem('tutorial_done')) setShowTutorial(true)
     }
   }
 
@@ -194,17 +196,27 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Error overlay — full screen */}
       {planError && (
-        <div style={{ background: '#1a0a0a', border: '1px solid #5a1a1a', borderRadius: '14px', padding: '14px 16px', marginBottom: '14px' }}>
-          <p style={{ color: '#ff6b6b', fontSize: '13px', margin: '0 0 6px 0' }}>Error: {planError}</p>
-          <button onClick={async () => {
-            const { data: { user } } = await supabase.auth.getUser()
-            if (user && profile) generatePlan(user.id, profile)
-          }} style={{ ...mono, fontSize: '11px', color: '#c8ff3c', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-            REINTENTAR
+        <div style={{ position: 'fixed', inset: 0, background: '#0a0b0d', zIndex: 999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px' }}>
+          <div style={{ fontSize: '48px', marginBottom: '24px' }}>⚠️</div>
+          <div style={{ fontSize: '22px', fontWeight: 700, color: '#f2f3f0', marginBottom: '12px', textAlign: 'center' }}>Error al generar el plan</div>
+          <div style={{ fontSize: '14px', color: '#6b7075', textAlign: 'center', lineHeight: 1.6, marginBottom: '40px', maxWidth: '280px' }}>
+            No se pudo conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.
+          </div>
+          <button
+            onClick={async () => {
+              setPlanError('')
+              const { data: { user } } = await supabase.auth.getUser()
+              if (user && profile) generatePlan(user.id, profile)
+            }}
+            style={{ width: '100%', maxWidth: '280px', background: '#c8ff3c', border: 'none', borderRadius: '14px', padding: '18px', fontFamily: "'Space Grotesk', sans-serif", fontSize: '16px', fontWeight: 600, color: '#0a0b0d', cursor: 'pointer' }}
+          >
+            Reintentar
           </button>
         </div>
       )}
+
 
       {/* Week strip — clickable */}
       <div style={{ display: 'flex', gap: '6px', marginBottom: '18px' }}>
