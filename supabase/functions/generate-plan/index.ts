@@ -122,11 +122,12 @@ Responde con este JSON:
 
 Para ciclismo: target_distance (km), target_duration (min), sin target_pace.
 Para running: target_distance (km), target_duration (min), target_pace ("M:SS" ej "6:00").
-Todos los valores numéricos deben ser números, no strings.`
+Todos los valores numéricos deben ser números, no strings.
+IMPORTANTE: Las descripciones deben ser concisas, máximo 120 caracteres cada una.`
 
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 4096,
+      max_tokens: 8192,
       messages: [{ role: 'user', content: prompt }],
     })
 
