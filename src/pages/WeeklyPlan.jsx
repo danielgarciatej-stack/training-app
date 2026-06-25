@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
@@ -34,9 +34,9 @@ export default function WeeklyPlan() {
   const [planEvent, setPlanEvent] = useState('')
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)
+  const [swapMode, setSwapMode] = useState(false)
   const [swapSource, setSwapSource] = useState(null)
   const [swapping, setSwapping] = useState(false)
-  const holdTimer = useRef(null)
 
   const today = new Date()
   const todayStr = toDateStr(today)
@@ -93,18 +93,19 @@ export default function WeeklyPlan() {
     else setCurrentMonth(m => m + 1)
   }
 
+  const cancelSwap = () => { setSwapMode(false); setSwapSource(null) }
+
   const performSwap = async (targetSession) => {
     if (!swapSource || targetSession.id === swapSource.id || swapping) return
     setSwapping(true)
     const srcDow = swapSource.day_of_week, srcWS = swapSource.week_start
     const tgtDow = targetSession.day_of_week, tgtWS = targetSession.week_start
-    // Optimistic update
     setSessions(prev => prev.map(s => {
       if (s.id === swapSource.id) return { ...s, day_of_week: tgtDow, week_start: tgtWS }
       if (s.id === targetSession.id) return { ...s, day_of_week: srcDow, week_start: srcWS }
       return s
     }))
-    setSwapSource(null)
+    cancelSwap()
     setSelected(null)
     await Promise.all([
       supabase.from('plan_sessions').update({ day_of_week: tgtDow, week_start: tgtWS }).eq('id', swapSource.id),
@@ -113,21 +114,17 @@ export default function WeeklyPlan() {
     setSwapping(false)
   }
 
-  const handleCellPointerDown = (session) => {
-    if (!session || session.status === 'completed') return
-    holdTimer.current = setTimeout(() => {
-      setSwapSource(session)
-      setSelected(null)
-      if (navigator.vibrate) navigator.vibrate(40)
-    }, 550)
-  }
-  const handleCellPointerUp = () => clearTimeout(holdTimer.current)
-
   const handleCellClick = (session) => {
     if (!session) return
-    if (swapSource) {
-      if (session.status !== 'completed' && swapSource.id !== session.id) performSwap(session)
-      else if (swapSource.id === session.id) setSwapSource(null)
+    if (swapMode) {
+      if (session.status === 'completed') return
+      if (!swapSource) {
+        setSwapSource(session)
+      } else if (swapSource.id === session.id) {
+        setSwapSource(null)
+      } else {
+        performSwap(session)
+      }
     } else {
       setSelected(prev => prev?.id === session.id ? null : session)
     }
@@ -203,9 +200,6 @@ export default function WeeklyPlan() {
               <div
                 key={dateStr}
                 onClick={() => handleCellClick(session)}
-                onPointerDown={() => handleCellPointerDown(session)}
-                onPointerUp={handleCellPointerUp}
-                onPointerLeave={handleCellPointerUp}
                 style={{ height: '52px', borderRadius: '10px', background: bg, border, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px', cursor: session ? 'pointer' : 'default', userSelect: 'none', WebkitUserSelect: 'none' }}
               >
                 <span style={{ ...mono, fontSize: '12px', fontWeight: isToday ? 700 : 500, color: dayColor }}>{day}</span>
@@ -215,18 +209,26 @@ export default function WeeklyPlan() {
           })}
         </div>
 
-        {/* Legend */}
-        <div style={{ display: 'flex', gap: '14px', marginTop: '12px', flexWrap: 'wrap' }}>
-          {[
-            { style: { width: '10px', height: '10px', borderRadius: '3px', background: 'rgba(200,255,60,0.14)', border: '1px solid rgba(200,255,60,0.35)' }, label: 'Completado' },
-            { style: { width: '10px', height: '10px', borderRadius: '3px', border: '2px solid #c8ff3c' }, label: 'Hoy' },
-            { style: { width: '10px', height: '10px', borderRadius: '3px', border: '1px solid #2a2e33' }, label: 'Planificado' },
-          ].map(({ style, label }) => (
-            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#8a8e92' }}>
-              <span style={style} />{label}
-            </div>
-          ))}
-          <div style={{ fontSize: '11px', color: '#5a5f64', marginLeft: 'auto' }}>Mantén pulsado para intercambiar</div>
+        {/* Legend + swap button */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '14px' }}>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            {[
+              { style: { width: '10px', height: '10px', borderRadius: '3px', background: 'rgba(200,255,60,0.14)', border: '1px solid rgba(200,255,60,0.35)' }, label: 'Completado' },
+              { style: { width: '10px', height: '10px', borderRadius: '3px', border: '2px solid #c8ff3c' }, label: 'Hoy' },
+              { style: { width: '10px', height: '10px', borderRadius: '3px', border: '1px solid #2a2e33' }, label: 'Planificado' },
+            ].map(({ style, label }) => (
+              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '10px', color: '#8a8e92' }}>
+                <span style={style} />{label}
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={() => swapMode ? cancelSwap() : setSwapMode(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', background: swapMode ? 'rgba(200,255,60,0.12)' : '#131417', border: `1px solid ${swapMode ? 'rgba(200,255,60,0.4)' : '#2a2e33'}`, borderRadius: '10px', padding: '7px 12px', color: swapMode ? '#c8ff3c' : '#9a9ea2', fontSize: '14px', cursor: 'pointer', flexShrink: 0 }}
+          >
+            <span>⇄</span>
+            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '12px' }}>{swapMode ? 'Cancelar' : 'Cambiar'}</span>
+          </button>
         </div>
       </div>
 
@@ -234,10 +236,14 @@ export default function WeeklyPlan() {
       <div style={{ padding: '16px 24px 24px' }}>
 
         {/* Swap mode banner */}
-        {swapSource && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(200,255,60,0.08)', border: '1px solid rgba(200,255,60,0.28)', borderRadius: '12px', padding: '11px 14px', marginBottom: '12px' }}>
-            <span style={{ fontSize: '13px', color: '#c8ff3c' }}>Toca el día con el que intercambiar</span>
-            <button onClick={() => setSwapSource(null)} style={{ background: 'none', border: 'none', color: '#9a9ea2', fontSize: '20px', cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}>×</button>
+        {swapMode && (
+          <div style={{ background: 'rgba(200,255,60,0.08)', border: '1px solid rgba(200,255,60,0.28)', borderRadius: '12px', padding: '11px 14px', marginBottom: '12px' }}>
+            <div style={{ fontSize: '13px', color: '#c8ff3c', marginBottom: '2px' }}>
+              {!swapSource ? '1. Toca el día que quieres mover' : '2. Toca el día con el que intercambiar'}
+            </div>
+            <div style={{ fontSize: '11px', color: '#6b7075' }}>
+              {swapSource ? `Origen: ${WEEK_NAMES[swapSource.day_of_week]} — ${swapSource.session_type}` : 'Selecciona primero el origen'}
+            </div>
           </div>
         )}
 
