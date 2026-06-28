@@ -120,7 +120,11 @@ export default function Dashboard() {
       const { data: fnData, error: fnError } = await supabase.functions.invoke('generate-plan', {
         body: { profile: { ...profileData, id: userId } },
       })
-      if (fnError) throw fnError
+      if (fnError) {
+        let msg = fnError.message
+        try { const body = await fnError.context?.json?.(); if (body?.error) msg = body.error } catch {}
+        throw new Error(msg)
+      }
       if (!fnData?.plan) throw new Error('Formato de plan incorrecto')
 
       const sessions = []
