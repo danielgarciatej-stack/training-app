@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import WorkoutDetail from '../components/WorkoutDetail'
 
 const mono = { fontFamily: "'JetBrains Mono', monospace" }
 const DAY_LETTERS = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
@@ -292,9 +293,7 @@ export default function WeeklyPlan() {
               )
             })()}
 
-            {selected.description && (
-              <div style={{ fontSize: '13px', color: '#8a8e92', lineHeight: 1.6, marginBottom: '16px' }}>{selected.description}</div>
-            )}
+            <WorkoutDetail workout={selected.workout} description={selected.description} />
 
             {selected.status === 'pending' && (() => {
               const sessDate = new Date(selected.week_start + 'T12:00:00')

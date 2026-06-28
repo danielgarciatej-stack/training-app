@@ -117,6 +117,49 @@ function EstimatesTable({ rows }) {
   )
 }
 
+const ZONE_META = [
+  { key: 'Z1', label: 'Recuperación', pctLow: 0.50, pctHigh: 0.60, color: '#4a9eff' },
+  { key: 'Z2', label: 'Aeróbico base', pctLow: 0.60, pctHigh: 0.70, color: '#22d3c8' },
+  { key: 'Z3', label: 'Umbral aeróbico', pctLow: 0.70, pctHigh: 0.80, color: '#f59e0b' },
+  { key: 'Z4', label: 'Umbral anaeróbico', pctLow: 0.80, pctHigh: 0.90, color: '#c8ff3c' },
+  { key: 'Z5', label: 'VO2 máx', pctLow: 0.90, pctHigh: 1.00, color: '#ff4444' },
+]
+
+function HRZones({ hrMax }) {
+  if (!hrMax) return null
+  return (
+    <div style={{ background: '#131417', border: '1px solid #232629', borderRadius: '16px', padding: '18px 20px', marginBottom: '12px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+        <div style={{ ...mono, fontSize: '10px', color: '#6b7075', letterSpacing: '0.1em' }}>ZONAS FC</div>
+        <div style={{ ...mono, fontSize: '11px', color: '#5a5f64' }}>FC máx {hrMax} bpm</div>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
+        {ZONE_META.map(z => {
+          const low = Math.round(hrMax * z.pctLow)
+          const high = z.pctHigh === 1.00 ? hrMax : Math.round(hrMax * z.pctHigh)
+          const barPct = (z.pctHigh - 0.50) / 0.50
+          return (
+            <div key={z.key} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ ...mono, fontSize: '11px', fontWeight: 700, color: z.color, width: '24px', flexShrink: 0 }}>{z.key}</div>
+              <div style={{ flex: 1, position: 'relative', height: '6px', background: '#1c1f23', borderRadius: '3px', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', left: `${(z.pctLow - 0.50) / 0.50 * 100}%`, width: `${(z.pctHigh - z.pctLow) / 0.50 * 100}%`, height: '100%', background: z.color, borderRadius: '3px', opacity: 0.85 }} />
+              </div>
+              <div style={{ ...mono, fontSize: '11px', color: '#9a9ea2', width: '74px', textAlign: 'right', flexShrink: 0 }}>{low}–{high} <span style={{ color: '#5a5f64' }}>bpm</span></div>
+            </div>
+          )
+        })}
+      </div>
+      <div style={{ marginTop: '12px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+        {ZONE_META.map(z => (
+          <div key={z.key} style={{ fontSize: '10px', color: '#6b7075', background: '#0f1012', border: `1px solid ${z.color}22`, borderRadius: '8px', padding: '3px 8px' }}>
+            <span style={{ color: z.color }}>{z.key}</span> {z.label}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function NoData({ sport }) {
   const labels = { run: 'running', bike: 'ciclismo', swim: 'natación' }
   return (
@@ -289,6 +332,8 @@ export default function FitnessState() {
           ))}
         </div>
       )}
+
+      <HRZones hrMax={profile?.hr_max} />
 
       {/* RUNNING */}
       {sport === 'run' && (hasRunData ? (

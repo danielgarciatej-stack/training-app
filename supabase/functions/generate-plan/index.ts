@@ -27,9 +27,9 @@ Deno.serve(async (req) => {
     const trainingDays = profile.trainingDays || profile.training_days || []
     const sessionDuration = profile.sessionDuration || profile.session_duration || 60
 
-    // Compute exact week_start dates server-side so Claude can't invent them
+    // Compute exact week_start dates server-side
     const now = new Date()
-    const jsDay = now.getDay() // 0=Sun, 1=Mon...
+    const jsDay = now.getDay()
     const daysToMonday = jsDay === 0 ? -6 : 1 - jsDay
     const thisMonday = new Date(now)
     thisMonday.setDate(now.getDate() + daysToMonday)
@@ -42,65 +42,65 @@ Deno.serve(async (req) => {
       return toISO(d)
     })
 
-    // Today's day_of_week in 0=Mon...6=Sun format
     const todayDow = jsDay === 0 ? 6 : jsDay - 1
     const todayStr = toISO(now)
 
-    // Build Strava data section if available
+    // HR zones from fc_max
+    const hrMax = profile.hr_max || 190
+    const z1 = { low: Math.round(hrMax * 0.50), high: Math.round(hrMax * 0.60) }
+    const z2 = { low: Math.round(hrMax * 0.60), high: Math.round(hrMax * 0.70) }
+    const z3 = { low: Math.round(hrMax * 0.70), high: Math.round(hrMax * 0.80) }
+    const z4 = { low: Math.round(hrMax * 0.80), high: Math.round(hrMax * 0.90) }
+    const z5 = { low: Math.round(hrMax * 0.90), high: hrMax }
+
+    // Strava section
     const stravaStats = profile.strava_stats
     const stravaSection = stravaStats ? `
-DATOS REALES DE STRAVA (últimas 8 semanas, muy importantes para calibrar el plan):
-- Km/semana reales (running): ${stravaStats.running_weekly_km ?? 'n/d'} km
-- Ritmo fácil real: ${profile.running_avg_pace || stravaStats.avg_easy_pace || 'n/d'} min/km
+DATOS REALES DE STRAVA (últimas 8 semanas):
+- Km/semana running: ${stravaStats.running_weekly_km ?? 'n/d'} km
+- Ritmo fácil: ${profile.running_avg_pace || stravaStats.avg_easy_pace || 'n/d'} min/km
 - Carrera más larga: ${profile.running_longest_run || stravaStats.longest_run_km || 'n/d'} km
 - FC media: ${profile.running_avg_hr || stravaStats.avg_heart_rate || 'n/d'} bpm
-- Total carreras (8 sem): ${stravaStats.total_runs_8w ?? 'n/d'}
-- Km año (running): ${stravaStats.ytd_run_km ?? 'n/d'} km
-${stravaStats.cycling_weekly_km ? `- Km/semana reales (ciclismo): ${stravaStats.cycling_weekly_km} km` : ''}
-Usa estos datos para fijar ritmos, volumen y progresión realistas.` : ''
+${stravaStats.cycling_weekly_km ? `- Km/semana ciclismo: ${stravaStats.cycling_weekly_km} km` : ''}` : ''
 
-    const prompt = `Eres un entrenador personal experto en running y ciclismo. Genera un plan de entrenamiento personalizado de 4 semanas. Responde ÚNICAMENTE con JSON válido, sin texto adicional, sin markdown.
+    const prompt = `Eres un entrenador personal experto. Genera un plan de entrenamiento de 4 semanas. Responde ÚNICAMENTE con JSON válido, sin texto adicional, sin markdown.
 
-PERFIL DEL ATLETA:
-- Nombre: ${profile.name || 'Atleta'}
+PERFIL:
 - Nivel: ${profile.level || 'intermedio'}
-- Edad: ${profile.age || 'no especificada'}
-- Peso: ${profile.weight || 'no especificado'} kg
+- Edad: ${profile.age || 'n/d'} | Peso: ${profile.weight || 'n/d'} kg
 - Deportes: ${sports.join(', ')}
-${hasRunning ? `
-RUNNING:
-- Objetivo: ${profile.runningGoal || profile.running_goal || 'mejorar forma física'}
-- Km semanales actuales: ${profile.runningWeeklyKm || profile.running_weekly_km || 0} km
-` : ''}
-${hasCycling ? `
-CICLISMO:
-- Objetivo: ${profile.cyclingGoal || profile.cycling_goal || 'mejorar forma física'}
-- Km semanales actuales: ${profile.cyclingWeeklyKm || profile.cycling_weekly_km || 0} km
-` : ''}
+- FC máx: ${hrMax} bpm
+${hasRunning ? `- Objetivo running: ${profile.runningGoal || profile.running_goal || 'mejorar forma física'}
+- Km/sem actuales: ${profile.runningWeeklyKm || profile.running_weekly_km || 0} km` : ''}
+${hasCycling ? `- Objetivo ciclismo: ${profile.cyclingGoal || profile.cycling_goal || 'mejorar forma física'}` : ''}
 ${stravaSection}
+
+ZONAS FC DEL ATLETA (FC máx ${hrMax} bpm):
+- Z1 Recuperación: ${z1.low}–${z1.high} bpm
+- Z2 Aeróbico base: ${z2.low}–${z2.high} bpm
+- Z3 Umbral aeróbico: ${z3.low}–${z3.high} bpm
+- Z4 Umbral anaeróbico: ${z4.low}–${z4.high} bpm
+- Z5 VO2max: ${z5.low}–${z5.high} bpm
+
 DISPONIBILIDAD:
-- Días disponibles (0=lun, 1=mar, 2=mié, 3=jue, 4=vie, 5=sáb, 6=dom): [${trainingDays.join(', ')}]
-- Duración máxima por sesión: ${sessionDuration} minutos
-- Hoy es: ${todayStr} (day_of_week=${todayDow})
+- Días (0=lun…6=dom): [${trainingDays.join(', ')}]
+- Duración máx: ${sessionDuration} min
+- Hoy: ${todayStr} (day_of_week=${todayDow})
 ${profile.goalDate || profile.goal_date ? `- Fecha objetivo: ${profile.goalDate || profile.goal_date}` : ''}
-${profile.goalEvent || profile.goal_event ? `- Evento objetivo: ${profile.goalEvent || profile.goal_event}` : ''}
+${profile.goalEvent || profile.goal_event ? `- Evento: ${profile.goalEvent || profile.goal_event}` : ''}
 
-INSTRUCCIONES CRÍTICAS DE DEPORTES — MUY IMPORTANTE:
-Solo puedes generar sesiones de estos deportes: [${sports.join(', ')}].
-PROHIBIDO incluir cualquier otro deporte. Si solo hay running, todas las sesiones deben ser de running. Si solo hay cycling, todas de ciclismo. No mezcles deportes no seleccionados.
+REGLAS DE DEPORTES: Solo puedes usar los deportes del perfil: [${sports.join(', ')}]. PROHIBIDO mezclar otros deportes.
 
-INSTRUCCIONES CRÍTICAS DE FECHAS — NO LAS IGNORES:
-Usa EXACTAMENTE estas fechas de inicio de semana, no inventes otras:
-- Semana 1: week_start="${weekStarts[0]}"
+REGLAS DE FECHAS:
+- Semana 1: week_start="${weekStarts[0]}" — solo días >= ${todayDow}
 - Semana 2: week_start="${weekStarts[1]}"
 - Semana 3: week_start="${weekStarts[2]}"
 - Semana 4: week_start="${weekStarts[3]}"
+Progresión gradual de dificultad semana a semana.
 
-En la semana 1, incluye sesiones SOLO para días con day_of_week >= ${todayDow} (incluyendo hoy si está disponible).
-En las semanas 2, 3 y 4, incluye sesiones en todos los días disponibles del atleta.
-Las semanas deben progresar gradualmente en dificultad (semana 1 más ligera, semana 4 más exigente).
+REGLAS DE FUERZA: En exactamente 1 sesión por semana (la más apropiada), añade "strength" con 3-4 ejercicios de peso corporal adaptados al deporte principal.
 
-Responde con este JSON:
+Responde con este JSON exacto:
 {
   "plan": [
     {
@@ -110,20 +110,32 @@ Responde con este JSON:
           "day_of_week": 0,
           "sport": "running",
           "session_type": "Rodaje suave",
-          "description": "Descripción detallada del entrenamiento con instrucciones claras",
+          "description": "Resumen breve (máx 100 chars)",
           "target_distance": 5,
           "target_duration": 30,
-          "target_pace": "6:00"
+          "target_pace": "6:00",
+          "workout": {
+            "warmup": ["ejercicio duración", "ejercicio duración"],
+            "blocks": [
+              {"label": "Nombre bloque", "detail": "detalle corto", "zone": "Z2", "bpm": "${z2.low}–${z2.high}"}
+            ],
+            "strength": ["Sentadillas 3×15", "Zancadas 3×10/pierna"],
+            "cooldown": ["estiramiento duración", "estiramiento duración"]
+          }
         }
       ]
     }
   ]
 }
 
-Para ciclismo: target_distance (km), target_duration (min), sin target_pace.
-Para running: target_distance (km), target_duration (min), target_pace ("M:SS" ej "6:00").
-Todos los valores numéricos deben ser números, no strings.
-IMPORTANTE: Las descripciones deben ser concisas, máximo 120 caracteres cada una.`
+REGLAS WORKOUT:
+- warmup: 2-3 ejercicios de movilidad específicos para el tipo de sesión
+- blocks: 2-4 bloques (calentamiento trote / trabajo principal / vuelta calma). Usa las zonas FC reales del atleta
+- strength: solo en 1 sesión/semana. Peso corporal: sentadillas, zancadas, plancha, fondos, etc.
+- cooldown: 2-3 estiramientos específicos post-sesión
+- Textos MUY concisos (máx 35 chars por item de warmup/cooldown, máx 40 chars en detail de blocks)
+- Para ciclismo: sin target_pace. Para running: target_pace en "M:SS"
+- Todos los valores numéricos como números, no strings`
 
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
@@ -133,7 +145,7 @@ IMPORTANTE: Las descripciones deben ser concisas, máximo 120 caracteres cada un
 
     const text = message.content[0].text.trim()
 
-    // Extract JSON robustly — find outermost { } ignoring any markdown wrapping
+    // Extract JSON robustly
     let jsonText = text
     const firstBrace = text.indexOf('{')
     const lastBrace = text.lastIndexOf('}')

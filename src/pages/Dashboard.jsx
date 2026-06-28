@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import Tutorial from '../components/Tutorial'
+import WorkoutDetail from '../components/WorkoutDetail'
 
 const mono = { fontFamily: "'JetBrains Mono', monospace" }
 
@@ -132,6 +133,7 @@ export default function Dashboard() {
             target_distance: session.target_distance || null,
             target_duration: session.target_duration || null,
             target_pace: session.target_pace || null,
+            workout: session.workout || null,
             status: 'pending',
           })
         }
@@ -320,16 +322,9 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Description right below the session card */}
-      {displaySession?.description && (
-        <div style={{ background: '#131417', border: '1px solid #1c1f23', borderRadius: '14px', padding: '14px 16px', marginBottom: '14px' }}>
-          <div style={{ ...mono, fontSize: '9px', color: '#6b7075', letterSpacing: '0.12em', marginBottom: '8px' }}>
-            DESCRIPCIÓN · {WEEK_NAMES[displaySession.day_of_week]}
-          </div>
-          <div style={{ fontSize: '13px', color: '#9a9ea2', lineHeight: 1.6 }}>
-            {displaySession.description}
-          </div>
-        </div>
+      {/* Workout detail below session card */}
+      {displaySession && (
+        <WorkoutDetail workout={displaySession.workout} description={displaySession.description} />
       )}
 
       {/* Streak */}
