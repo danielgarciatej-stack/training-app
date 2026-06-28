@@ -9,6 +9,19 @@ const labelStyle = { ...mono, fontSize: '11px', letterSpacing: '0.14em', color: 
 const btnPrimary = { width: '100%', background: '#c8ff3c', border: 'none', borderRadius: '14px', padding: '18px', fontFamily: "'Space Grotesk', sans-serif", fontSize: '16px', fontWeight: 600, color: '#0a0b0d', cursor: 'pointer' }
 const backStyle = { display: 'inline-flex', alignItems: 'center', gap: '5px', cursor: 'pointer', color: '#9a9ea2', fontSize: '14px', marginBottom: '18px', background: 'none', border: 'none', padding: 0, fontFamily: "'Space Grotesk', sans-serif" }
 
+function maskMSS(val) {
+  const d = val.replace(/\D/g, '').slice(0, 4)
+  if (d.length <= 2) return d
+  return d.slice(0, d.length - 2) + ':' + d.slice(-2)
+}
+
+function maskHMMSS(val) {
+  const d = val.replace(/\D/g, '').slice(0, 6)
+  if (d.length <= 2) return d
+  if (d.length <= 4) return d.slice(0, d.length - 2) + ':' + d.slice(-2)
+  return d.slice(0, d.length - 4) + ':' + d.slice(-4, -2) + ':' + d.slice(-2)
+}
+
 const STRAVA_CLIENT_ID = '260486'
 const STRAVA_REDIRECT = `${window.location.origin}/strava/callback`
 const STRAVA_URL = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(STRAVA_REDIRECT)}&approval_prompt=force&scope=read,profile:read_all,activity:read_all`
@@ -504,9 +517,9 @@ export default function Onboarding() {
       </div>
       <div style={{ ...mono, fontSize: '11px', letterSpacing: '0.14em', color: '#6b7075', marginBottom: '12px' }}>MARCAS ACTUALES <span style={{ color: '#3a3e42', fontWeight: 400 }}>· opcional</span></div>
       <div style={{ display: 'flex', gap: '10px', marginBottom: '28px' }}>
-        <div style={{ flex: 1 }}><div style={{ ...mono, fontSize: '10px', color: '#6b7075', letterSpacing: '0.1em', marginBottom: '7px' }}>5K</div><input value={form.t5k} onChange={e => set('t5k', e.target.value)} placeholder="M:SS" style={{ ...inputStyle, textAlign: 'center', padding: '13px 6px' }} /></div>
-        <div style={{ flex: 1 }}><div style={{ ...mono, fontSize: '10px', color: '#6b7075', letterSpacing: '0.1em', marginBottom: '7px' }}>10K</div><input value={form.t10k} onChange={e => set('t10k', e.target.value)} placeholder="M:SS" style={{ ...inputStyle, textAlign: 'center', padding: '13px 6px' }} /></div>
-        <div style={{ flex: 1 }}><div style={{ ...mono, fontSize: '10px', color: '#6b7075', letterSpacing: '0.1em', marginBottom: '7px' }}>21K</div><input value={form.t21k} onChange={e => set('t21k', e.target.value)} placeholder="H:MM:SS" style={{ ...inputStyle, textAlign: 'center', padding: '13px 6px' }} /></div>
+        <div style={{ flex: 1 }}><div style={{ ...mono, fontSize: '10px', color: '#6b7075', letterSpacing: '0.1em', marginBottom: '7px' }}>5K</div><input inputMode="numeric" value={form.t5k} onChange={e => set('t5k', maskMSS(e.target.value))} placeholder="M:SS" style={{ ...inputStyle, textAlign: 'center', padding: '13px 6px' }} /></div>
+        <div style={{ flex: 1 }}><div style={{ ...mono, fontSize: '10px', color: '#6b7075', letterSpacing: '0.1em', marginBottom: '7px' }}>10K</div><input inputMode="numeric" value={form.t10k} onChange={e => set('t10k', maskMSS(e.target.value))} placeholder="M:SS" style={{ ...inputStyle, textAlign: 'center', padding: '13px 6px' }} /></div>
+        <div style={{ flex: 1 }}><div style={{ ...mono, fontSize: '10px', color: '#6b7075', letterSpacing: '0.1em', marginBottom: '7px' }}>21K</div><input inputMode="numeric" value={form.t21k} onChange={e => set('t21k', maskHMMSS(e.target.value))} placeholder="H:MM:SS" style={{ ...inputStyle, textAlign: 'center', padding: '13px 6px' }} /></div>
       </div>
       <button onClick={advance} style={btnPrimary}>{editing ? 'Guardar y volver' : 'Revisar y continuar'}</button>
     </div>
