@@ -15,9 +15,7 @@ const SPORTS = [
   { id: 'running', name: 'Running', desc: 'CARRERA A PIE' },
   { id: 'cycling', name: 'Ciclismo', desc: 'CARRETERA / MTB' },
   { id: 'triatlon', name: 'Triatlón', desc: 'NADO·BICI·CARRERA' },
-  { id: 'trail', name: 'Trail', desc: 'MONTAÑA' },
   { id: 'natacion', name: 'Natación', desc: 'PISCINA' },
-  { id: 'futbol', name: 'Fútbol', desc: 'EQUIPO' },
 ]
 const LEVELS = [
   { id: 'principiante', name: 'Principiante', desc: 'Empiezo o vuelvo tras un parón' },

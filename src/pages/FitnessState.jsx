@@ -155,7 +155,7 @@ export default function FitnessState() {
       setProfile(prof)
       setSessions(sess || [])
       const sports = prof?.sports || ['running']
-      if (sports.includes('running') || sports.includes('trail')) setSport('run')
+      if (sports.includes('running')) setSport('run')
       else if (sports.includes('cycling')) setSport('bike')
       else if (sports.includes('natacion')) setSport('swim')
       setLoading(false)
@@ -176,7 +176,7 @@ export default function FitnessState() {
   }).reverse()
 
   // ---- RUNNING ----
-  const runSessions = sessions.filter(s => s.sport === 'running' || s.sport === 'trail')
+  const runSessions = sessions.filter(s => s.sport === 'running')
 
   const runWeeklyPaceSecs = sixWeeks.map(ws => {
     const ws_sess = runSessions.filter(s => s.week_start === ws && s.actual_pace)
@@ -261,7 +261,7 @@ export default function FitnessState() {
 
   // Sport tabs
   const sportTabs = [
-    (userSports.includes('running') || userSports.includes('trail')) && { id: 'run', label: 'Running' },
+    userSports.includes('running') && { id: 'run', label: 'Running' },
     userSports.includes('cycling') && { id: 'bike', label: 'Ciclismo' },
     userSports.includes('natacion') && { id: 'swim', label: 'Natación' },
   ].filter(Boolean)

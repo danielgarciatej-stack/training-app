@@ -9,11 +9,9 @@ const MONTH_NAMES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Jul
 
 const SPORT_ICONS = {
   running: '🏃',
-  trail: '🏔️',
   cycling: '🚴',
   natacion: '🏊',
   triatlon: '🏅',
-  futbol: '⚽',
 }
 
 function toDateStr(d) {

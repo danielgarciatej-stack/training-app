@@ -8,7 +8,7 @@ const mono = { fontFamily: "'JetBrains Mono', monospace" }
 const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 const WEEK_NAMES = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM']
 const DAY_LABELS = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
-const SPORT_ICONS = { running: '🏃', trail: '🏔️', cycling: '🚴', natacion: '🏊', triatlon: '🏅', futbol: '⚽' }
+const SPORT_ICONS = { running: '🏃', cycling: '🚴', natacion: '🏊', triatlon: '🏅' }
 
 function getWeekStart(date) {
   const d = new Date(date)

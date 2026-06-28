@@ -17,9 +17,7 @@ const SPORTS = [
   { id: 'running', name: 'Running', desc: 'CARRERA A PIE' },
   { id: 'cycling', name: 'Ciclismo', desc: 'CARRETERA / MTB' },
   { id: 'triatlon', name: 'Triatlón', desc: 'NADO·BICI·CARRERA' },
-  { id: 'trail', name: 'Trail', desc: 'MONTAÑA' },
   { id: 'natacion', name: 'Natación', desc: 'PISCINA' },
-  { id: 'futbol', name: 'Fútbol', desc: 'EQUIPO' },
 ]
 const LEVELS = [
   { id: 'principiante', name: 'Principiante', desc: 'Empiezo o vuelvo tras un parón', tag: '01' },
@@ -516,7 +514,7 @@ export default function Onboarding() {
 
   // ---- SUMMARY ----
   if (screen === 'summary') {
-    const sportNames = { running: 'Running', cycling: 'Ciclismo', triatlon: 'Triatlón', trail: 'Trail', natacion: 'Natación', futbol: 'Fútbol' }
+    const sportNames = { running: 'Running', cycling: 'Ciclismo', triatlon: 'Triatlón', natacion: 'Natación' }
     const levelNames = { principiante: 'Principiante', inter: 'Intermedio', avanzado: 'Avanzado' }
     const goalNames = { carrera: 'Competición', marca: 'Marca / ritmo', fitness: 'Salud', peso: 'Peso' }
     const daysLabel = form.training_days.map(d => DAY_LABELS[d]).join(' · ')
