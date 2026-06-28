@@ -203,8 +203,8 @@ export default function Dashboard() {
         <div style={{ position: 'fixed', inset: 0, background: '#0a0b0d', zIndex: 999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px' }}>
           <div style={{ fontSize: '48px', marginBottom: '24px' }}>⚠️</div>
           <div style={{ fontSize: '22px', fontWeight: 700, color: '#f2f3f0', marginBottom: '12px', textAlign: 'center' }}>Error al generar el plan</div>
-          <div style={{ fontSize: '14px', color: '#6b7075', textAlign: 'center', lineHeight: 1.6, marginBottom: '40px', maxWidth: '280px' }}>
-            No se pudo conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.
+          <div style={{ fontSize: '13px', color: '#6b7075', textAlign: 'center', lineHeight: 1.6, marginBottom: '40px', maxWidth: '320px', wordBreak: 'break-word' }}>
+            {planError}
           </div>
           <button
             onClick={async () => {
