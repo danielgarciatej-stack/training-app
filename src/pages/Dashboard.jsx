@@ -208,7 +208,9 @@ export default function Dashboard() {
           <div style={{ fontSize: '48px', marginBottom: '24px' }}>⚠️</div>
           <div style={{ fontSize: '22px', fontWeight: 700, color: '#f2f3f0', marginBottom: '12px', textAlign: 'center' }}>Error al generar el plan</div>
           <div style={{ fontSize: '13px', color: '#6b7075', textAlign: 'center', lineHeight: 1.6, marginBottom: '40px', maxWidth: '320px', wordBreak: 'break-word' }}>
-            {planError}
+            {planError?.includes('usage limits') || planError?.includes('API usage')
+              ? 'Límite de uso de la IA alcanzado. Inténtalo de nuevo en unas horas.'
+              : planError}
           </div>
           <button
             onClick={async () => {
